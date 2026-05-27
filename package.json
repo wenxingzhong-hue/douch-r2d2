@@ -1,0 +1,12 @@
+{
+  "name": "team-task-manager",
+  "version": "1.0.0",
+  "description": "团队任务管理系统",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
