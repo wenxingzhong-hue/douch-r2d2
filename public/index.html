@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>团队任务管理系统</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family: "Microsoft YaHei", sans-serif;}
+        body{background:#f5f7fa;padding:20px;}
+
+        .easy-tooltip{
+            position: absolute;
+            background: #222;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size:14px;
+            max-width:500px;
+            z-index:9999;
+            display:none;
+            white-space:pre-wrap;
+            box-shadow:0 2px 6px #00000033;
+        }
+
+        .login-box{max-width:500px;margin:80px auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 2px 20px #00000010;}
+        .login-box h2{text-align:center;color:#2b7cc7;margin-bottom:20px;}
+        .form-item{margin:16px 0;}
+        .form-item label{display:block;margin-bottom:6px;font-weight:bold;color:#333;}
+        .form-item input,.form-item select,.form-item textarea{
+            width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;background:#fff !important;color:#333;
+        }
+        .login-btn{width:100%;padding:12px;background:#2b7cc7;color:#fff;border:none;border-radius:6px;font-size:16px;cursor:pointer;margin-top:10px;}
+
+        .top-bar{display:flex;justify-content:space-between;align-items:center;background:#fff;padding:16px 20px;border-radius:10px;margin-bottom:20px;box-shadow:0 2px 10px #00000010;flex-wrap:wrap;gap:10px;}
+        .top-bar h2{color:#2b7cc7;}
+        .btn-group button{margin-left:8px;padding:8px 12px;border:none;border-radius:4px;cursor:pointer;}
+        .add-user-btn{background:#2b7cc7;color:white;}
+        .edit-pwd-btn{background:#16a4fa;color:white;}
+        .reset-pwd-btn,.logout-btn{background:#e53e3e;color:white;}
+        .export-btn{background:#67c23a;color:white;}
+
+        .filter-wrap{background:#fff;padding:15px;border-radius:10px;margin:20px 0;display:flex;gap:15px;align-items:center;flex-wrap:wrap;}
+        .filter-wrap select{padding:6px;border-radius:4px;border:1px solid #ddd;}
+
+        .dashboard{background:#fff;padding:20px;border-radius:10px;margin-bottom:20px;}
+        .dashboard h3{color:#2b7cc7;margin-bottom:16px;}
+        .group-title{font-size:16px;font-weight:bold;color:#2b7cc7;margin:12px 0 8px;}
+        .group-row{display:flex;gap:15px;flex-wrap:wrap;margin-bottom:15px;}
+        .stat-card{border:1px solid #eee;padding:15px;border-radius:8px;min-width:220px;background:#fafbfc;}
+        .stat-card h4{margin-bottom:8px;color:#333;}
+        .stat-row{display:flex;justify-content:space-between;margin:4px 0;font-size:14px;}
+        .summary-box{margin-top:20px;padding-top:16px;border-top:1px dashed #eee;}
+
+        .container{
+            display:grid;
+            grid-template-columns: 28% 70%;
+            gap:2%;
+            width:100%;
+            margin-top:20px;
+        }
+        .left-panel, .right-panel{
+            display:flex;
+            flex-direction:column;
+            gap:15px;
+        }
+        .block-normal{
+            height:240px;
+            background:#fff;
+            border-radius:10px;
+            padding:15px;
+            box-shadow:0 2px 8px #00000010;
+            display:flex;
+            flex-direction:column;
+        }
+        .block-large{
+            height:480px;
+            background:#fff;
+            border-radius:10px;
+            padding:15px;
+            box-shadow:0 2px 8px #00000010;
+            display:flex;
+            flex-direction:column;
+        }
+
+        .section-title{color:#2b7cc7;margin-bottom:10px;}
+        .content-box{
+            flex:1;
+            border:1px solid #eee;
+            border-radius:6px;
+            padding:8px;
+            overflow-y:auto;
+            background:#fafbfc;
+        }
+
+        .task-item{padding:6px 8px;background:#fff;margin-bottom:8px;border-radius:4px;border-left:3px solid #2b7cc7;font-size:13px;}
+        .task-item.overdue{border-left-color:#f56c6c;background:#fef0f0;}
+        .task-main{display:flex;justify-content:space-between;align-items:center;}
+        .task-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%;}
+        .task-op{display:flex;gap:6px;}
+        .edit-btn,.del-btn{cursor:pointer;padding:2px 4px;border-radius:2px;font-size:12px;}
+        .edit-btn{color:#2b7cc7;border:1px solid #2b7cc7;}
+        .del-btn{color:#e53e3e;border:1px solid #e53e3e;}
+
+        table{width:100%;border-collapse:collapse;background:#fff;table-layout:fixed;}
+        th,td{
+            padding:10px;
+            text-align:left;
+            border-bottom:1px solid #eee;
+            font-size:14px;
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
+        }
+        th{background:#f7fafc;}
+        td.overdue{color:#f56c6c;font-weight:bold;}
+        .locked:disabled{background:#f1f1f1;cursor:not-allowed;}
+
+        .modal{
+            position:fixed;top:0;left:0;width:100%;height:100%;
+            background:rgba(0,0,0,0.7);display:none;justify-content:center;align-items:center;z-index:999;
+        }
+        .modal-content{
+            background:#fff !important;
+            padding:25px;border-radius:10px;width:460px;position:relative;z-index:1000;
+            color:#333 !important; box-shadow:0 4px 20px #00000033;
+        }
+        .close-modal{position:absolute;top:15px;right:15px;font-size:20px;cursor:pointer;color:#333;background:#fff;padding:2px;}
+        .hide{display:none!important;}
+    </style>
+</head>
+<body>
+
+<div class="easy-tooltip"></div>
+
+<div id="loginPage" class="login-box">
+    <h2>团队任务管理系统</h2>
+    <div class="form-item">
+        <label>选择用户</label>
+        <select id="userSelect"></select>
+    </div>
+    <div class="form-item">
+        <label>登录密码</label>
+        <input type="password" id="loginPwd" placeholder="初始密码：8888">
+    </div>
+    <button class="login-btn" onclick="userLogin()">登录系统</button>
+</div>
+
+<div id="mainPage" style="display:none;">
+    <div class="top-bar">
+        <h2>团队任务管理</h2>
+        <div class="btn-group">
+            <span id="currentUserInfo"></span>
+            <button class="add-user-btn hide" id="addUserBtn">添加用户</button>
+            <button class="edit-pwd-btn hide" id="editPwdBtn">修改密码</button>
+            <button class="reset-pwd-btn hide" id="resetPwdBtn">重置密码</button>
+            <button class="export-btn" onclick="exportExcel()">导出Excel</button>
+            <button class="logout-btn" onclick="logout()">退出登录</button>
+        </div>
+    </div>
+
+    <div class="user-manager hide" id="userManagerPanel">
+        <h3>👥 用户管理</h3>
+        <table class="user-table">
+            <thead><tr><th>ID</th><th>姓名</th><th>角色</th><th>小组</th><th>操作</th></tr></thead>
+            <tbody id="userTableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="dashboard">
+        <h3>📊 任务完成统计</h3>
+        <div id="statContainer"></div>
+        <div class="summary-box">
+            <h4>📋 全团队一级任务汇总</h4>
+            <div style="margin-top:10px;max-height:300px;overflow-y:auto;">
+                <table>
+                    <thead><tr><th>所属人</th><th>时间</th><th>任务内容</th><th>状态</th><th>备注</th></tr></thead>
+                    <tbody id="level1Summary"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="filter-wrap">
+            <label>查看成员：</label>
+            <select id="viewUserSelect" onchange="switchView()"></select>
+            <label>任务状态筛选：</label>
+            <select id="statusFilter" onchange="filterTask()">
+                <option value="all">全部状态</option>
+                <option value="进行中">进行中</option>
+                <option value="已完成">已完成</option>
+                <option value="延期">延期</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="left-panel">
+            <div class="block-normal">
+                <div class="section-title">一级时间节点</div>
+                <div class="content-box" id="list1"></div>
+                <div class="input-row hide" id="input1">
+                    <input type="date" id="date1">
+                    <input type="text" placeholder="任务内容" id="task1">
+                    <button class="add-btn" onclick="addTask(1)">添加</button>
+                </div>
+            </div>
+            <div class="block-normal">
+                <div class="section-title">二级时间节点</div>
+                <div class="content-box" id="list2"></div>
+                <div class="input-row hide" id="input2">
+                    <input type="date" id="date2">
+                    <select id="parent2" style="flex:1;min-width:120px;"></select>
+                    <input type="text" placeholder="任务内容" id="task2">
+                    <button class="add-btn" onclick="addTask(2)">添加</button>
+                </div>
+            </div>
+            <div class="block-large">
+                <div class="section-title">周任务</div>
+                <div class="content-box" id="list3"></div>
+                <div class="input-row hide" id="input3">
+                    <input type="date" id="date3">
+                    <select id="parent3" style="flex:1;min-width:120px;"></select>
+                    <input type="text" placeholder="任务内容" id="task3">
+                    <button class="add-btn" onclick="addTask(3)">添加</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="block-normal">
+                <div class="section-title">一级时间节点表</div>
+                <div class="content-box">
+                    <table>
+                        <thead><tr><th>时间</th><th>内容</th><th>状态</th><th>备注</th><th>操作</th></tr></thead>
+                        <tbody id="table1"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="block-normal">
+                <div class="section-title">二级时间节点表</div>
+                <div class="content-box">
+                    <table>
+                        <thead><tr><th>归属一级</th><th>时间</th><th>内容</th><th>状态</th><th>备注</th><th>操作</th></tr></thead>
+                        <tbody id="table2"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="block-large">
+                <div class="section-title">周任务表</div>
+                <div class="content-box">
+                    <table>
+                        <thead><tr><th>归属一级</th><th>时间</th><th>内容</th><th>状态</th><th>备注</th><th>操作</th></tr></thead>
+                        <tbody id="table3"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="editModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('editModal')">×</span>
+        <h3>编辑任务</h3>
+        <div class="form-item">
+            <label>任务时间</label>
+            <input type="date" id="editDate">
+        </div>
+        <div class="form-item" id="editParentBox" style="display:none;">
+            <label>归属一级任务</label>
+            <select id="editParent"></select>
+        </div>
+        <div class="form-item">
+            <label>任务内容</label>
+            <input type="text" id="editContent">
+        </div>
+        <div class="form-item">
+            <label>修改原因（仅修改时间必填）</label>
+            <textarea id="editReason" rows="3"></textarea>
+        </div>
+        <button class="login-btn" onclick="saveEdit()">保存</button>
+    </div>
+</div>
+
+<div class="modal" id="addUserModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('addUserModal')">×</span>
+        <h3>添加用户</h3>
+        <div class="form-item">
+            <label>姓名</label>
+            <input type="text" id="newUserName">
+        </div>
+        <div class="form-item">
+            <label>角色</label>
+            <select id="newUserRole"></select>
+        </div>
+        <div class="form-item">
+            <label>小组</label>
+            <input type="text" id="newUserGroup">
+        </div>
+        <button class="login-btn" onclick="saveNewUser()">保存</button>
+    </div>
+</div>
+
+<div class="modal" id="editUserModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('editUserModal')">×</span>
+        <h3>编辑用户</h3>
+        <input type="hidden" id="editUserId">
+        <div class="form-item">
+            <label>姓名</label>
+            <input type="text" id="editUserName">
+        </div>
+        <div class="form-item">
+            <label>角色</label>
+            <select id="editUserRole"></select>
+        </div>
+        <div class="form-item">
+            <label>小组</label>
+            <input type="text" id="editUserGroup">
+        </div>
+        <button class="login-btn" onclick="saveEditUser()">保存</button>
+    </div>
+</div>
+
+<div class="modal" id="editPwdModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('editPwdModal')">×</span>
+        <h3>修改密码</h3>
+        <div class="form-item">
+            <label>原密码</label>
+            <input type="password" id="oldPwd">
+        </div>
+        <div class="form-item">
+            <label>新密码</label>
+            <input type="password" id="newPwd">
+        </div>
+        <div class="form-item">
+            <label>确认新密码</label>
+            <input type="password" id="confirmPwd">
+        </div>
+        <button class="login-btn" onclick="saveMyPwd()">保存</button>
+    </div>
+</div>
+
+<div class="modal" id="resetPwdModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('resetPwdModal')">×</span>
+        <h3>重置密码</h3>
+        <div class="form-item">
+            <label>选择用户</label>
+            <select id="resetUserSelect"></select>
+        </div>
+        <div class="form-item">
+            <label>新密码</label>
+            <input type="password" id="resetNewPwd" value="8888">
+        </div>
+        <button class="login-btn" onclick="doResetPwd()">确认重置</button>
+    </div>
+</div>
+
+<script>
+const API = "/api";
+let userList = [];
+let currentUser = null;
+let viewUid = null;
+let editTask = null;
+let globalTaskData = {};
+const roleLevel = { cto:4, manager:3, leader:2, member:1 };
+const roleText = { cto:"CTO", manager:"经理", leader:"组长", member:"组员" };
+
+function closeModal(m){
+    document.getElementById(m).style.display="none";
+    $("#editReason").val("");
+}
+function closeAllModals(){document.querySelectorAll(".modal").forEach(m=>m.style.display="none");}
+
+async function get(url){
+    try{
+        const r=await fetch(API+url);
+        return await r.json();
+    }catch(e){
+        return {l1:[],l2:[],week:[]};
+    }
+}
+async function post(url,d){
+    try{
+        return await fetch(API+url,{
+            method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(d)
+        }).then(res=>res.json());
+    }catch(e){
+        return {ok:false};
+    }
+}
+
+function isManager(){return currentUser?.role === "manager";}
+function isLeader(){return currentUser?.role === "leader";}
+function canEditAnyTask(){
+    if(!currentUser) return false;
+    return currentUser.role === "cto" || currentUser.role === "manager" || currentUser.role === "leader";
+}
+function canManageUser(){return currentUser && currentUser.role !== "member";}
+function canViewUser(target){
+    if(!currentUser) return false;
+    if(currentUser.role === "cto") return target.id !== 1;
+    if(currentUser.role === "manager") return target.role === "leader" || target.role === "member";
+    if(currentUser.role === "leader") return target.role === "member" && target.group === currentUser.group;
+    return false;
+}
+function canEditOrDeleteUser(target){
+    if(!currentUser || target.id === 1) return false;
+    return roleLevel[target.role] < roleLevel[currentUser.role];
+}
+
+function getDirectSuperior(uid){
+    const user = userList.find(u => u.id == uid);
+    if(!user) return [];
+    const res = [];
+    if(user.role === "member"){
+        const leader = userList.find(u => u.role === "leader" && u.group === user.group);
+        if(leader) res.push(leader.id);
+        const manager = userList.find(u => u.role === "manager");
+        if(manager) res.push(manager.id);
+    }
+    if(user.role === "leader"){
+        const manager = userList.find(u => u.role === "manager");
+        if(manager) res.push(manager.id);
+    }
+    return res;
+}
+
+function getAddSyncUserIds(operatorUid, taskType) {
+    const user = userList.find(u => u.id == operatorUid);
+    const syncIds = new Set();
+    syncIds.add(operatorUid);
+
+    if(!user) return Array.from(syncIds);
+
+    const superiorIds = getDirectSuperior(operatorUid);
+    if(user.role === "member" && taskType === 1){
+        superiorIds.forEach(id => syncIds.add(id));
+    }
+    if(user.role === "member" && taskType === 2){
+        const leader = userList.find(u => u.role === "leader" && u.group === user.group);
+        if(leader) syncIds.add(leader.id);
+    }
+    if(user.role === "leader" && taskType === 1){
+        const manager = userList.find(u => u.role === "manager");
+        if(manager) syncIds.add(manager.id);
+    }
+    return Array.from(syncIds);
+}
+
+function isSameTaskName(taskA, taskB){
+    return taskA.content === taskB.content;
+}
+
+function filterTask(){refreshTask();}
+
+function isOverdue(dateStr, status){
+    if(status === "已完成") return false;
+    const today = new Date();
+    const taskDate = new Date(dateStr);
+    return taskDate < today;
+}
+
+function sortByDate(arr){
+    return arr.sort((a,b)=> new Date(a.date) - new Date(b.date));
+}
+
+async function loadUsers(){
+    userList = await get("/users");
+    if(!Array.isArray(userList)) userList = [];
+    const s = document.getElementById("userSelect");
+    s.innerHTML = "";
+    userList.forEach(u=>{
+        const o = document.createElement("option");
+        o.value = u.id;
+        o.textContent = u.name + " (" + roleText[u.role] + ")";
+        s.appendChild(o);
+    });
+}
+
+async function userLogin(){
+    const uid = document.getElementById("userSelect").value;
+    const p = document.getElementById("loginPwd").value;
+    const u = userList.find(x=>x.id==uid);
+    if(!u){alert("用户不存在");return;}
+    if(u.role!=="member" && u.pwd!==btoa(p)){alert("密码错误");return;}
+    await post("/login",{id:uid});
+    currentUser = u; viewUid = u.id;
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("mainPage").style.display = "block";
+    document.getElementById("currentUserInfo").textContent = `当前：${u.name}（${roleText[u.role]}）`;
+    refreshAll();
+}
+
+function logout(){
+    currentUser = null;
+    viewUid = null;
+    document.getElementById("mainPage").style.display = "none";
+    document.getElementById("loginPage").style.display = "block";
+}
+
+async function refreshAll(){
+    refreshUserSelect();
+    refreshPerm();
+    refreshUserTable();
+    await refreshTask();
+    refreshStat();
+}
+
+function refreshPerm(){
+    const canManage = canManageUser();
+    document.getElementById("addUserBtn").classList.toggle("hide", !canManage);
+    document.getElementById("editPwdBtn").classList.toggle("hide", !currentUser || currentUser.role==="member");
+    document.getElementById("resetPwdBtn").classList.toggle("hide", !canManage);
+    document.getElementById("userManagerPanel").classList.toggle("hide", !canManage);
+    const canEdit = canEditAnyTask();
+    document.getElementById("input1").classList.toggle("hide", !canEdit);
+    document.getElementById("input2").classList.toggle("hide", !canEdit);
+    document.getElementById("input3").classList.toggle("hide", !canEdit);
+}
+
+function refreshUserSelect(){
+    const s = document.getElementById("viewUserSelect");
+    s.innerHTML = "";
+    userList.forEach(u=>{
+        if(currentUser && currentUser.role!=="cto" && u.role==="cto") return;
+        if(!currentUser || canViewUser(u) || u.id === viewUid){
+            const o = document.createElement("option");
+            o.value = u.id; o.textContent = u.name;
+            if(u.id == viewUid) o.selected = true;
+            s.appendChild(o);
+        }
+    });
+}
+
+async function refreshUserTable(){
+    const users = await get("/users");
+    const body = document.getElementById("userTableBody");
+    body.innerHTML = "";
+    if(!Array.isArray(users)) return;
+    users.forEach(u=>{
+        if(!canViewUser(u)) return;
+        const tr = document.createElement("tr");
+        let btns = "";
+        if(canEditOrDeleteUser(u)){
+            btns += `<span class="edit-row-btn" onclick="openEditUser(${u.id})">编辑</span>`;
+            btns += `<span class="delete-row-btn" onclick="deleteUser(${u.id})">删除</span>`;
+        }
+        tr.innerHTML = `<td data-show="${u.id}">${u.id}</td><td data-show="${u.name}">${u.name}</td><td data-show="${roleText[u.role]}">${roleText[u.role]}</td><td data-show="${u.group}">${u.group}</td><td>${btns}</td>`;
+        body.appendChild(tr);
+    });
+}
+
+async function switchView(){
+    viewUid = document.getElementById("viewUserSelect").value;
+    await refreshTask();
+}
+
+function fillParentSelect(selId, list){
+    const sel = document.getElementById(selId);
+    sel.innerHTML = '<option value="">— 请选择一级任务 —</option>';
+    list.forEach(item=>{
+        const opt = document.createElement("option");
+        opt.value = item.content;
+        opt.textContent = item.userName ? `${item.content} (${item.userName})` : item.content;
+        sel.appendChild(opt);
+    });
+}
+
+async function refreshTask(){
+    if(!viewUid) return;
+    const tu = userList.find(u=>u.id==viewUid);
+    if(currentUser && currentUser.role!=="cto" && tu?.role==="cto"){ render(1,[]);render(2,[]);render(3,[]); return;
+    }
+    
+    // 【核心修改】：通过并行 Promise 加载所有相关成员的任务，打通全团队一级任务库全局缓存
+    const promises = userList.map(async (u) => {
+        if(u.role==="cto" && currentUser && currentUser.role!=="cto") return;
+        globalTaskData[u.id] = await get(`/task/${u.id}`);
+    });
+    await Promise.all(promises);
+
+    const d = globalTaskData[viewUid] || {l1:[], l2:[], week:[]};
+    const f = document.getElementById("statusFilter").value;
+    let l1 = sortByDate([...d.l1||[]]);
+    let l2 = sortByDate([...d.l2||[]]);
+    let l3 = sortByDate([...d.week||[]]);
+    if(f!=="all"){
+        l1 = l1.filter(x=>x.status===f);
+        l2 = l2.filter(x=>x.status===f);
+        l3 = l3.filter(x=>x.status===f);
+    }
+    
+    // 【核心修改】：提取并去重全团队所有成员的一级时间节点任务，附带所属人提示
+    const allTeamL1 = [];
+    const seenl1 = new Set();
+    userList.forEach(u => {
+        if(u.role==="cto" && currentUser && currentUser.role!=="cto") return;
+        const ud = globalTaskData[u.id];
+        if(ud && ud.l1) {
+            ud.l1.forEach(item => {
+                const cnt = item.content.trim();
+                if(!seenl1.has(cnt)) {
+                    seenl1.add(cnt);
+                    allTeamL1.push({ content: item.content, userName: u.name });
+                }
+            });
+        }
+    });
+
+    fillParentSelect("parent2", allTeamL1);
+    fillParentSelect("parent3", allTeamL1);
+    render(1,l1); render(2,l2); render(3,l3);
+}
+
+function render(t,list){
+    const le = document.getElementById("list"+t);
+    const te = document.getElementById("table"+t);
+    le.innerHTML = ""; te.innerHTML = "";
+    const canEdit = canEditAnyTask();
+    
+    list.forEach((item,i)=>{
+        const prefix = item.parent ? `${item.parent} | ` : '';
+        const ft = prefix + item.date + " " + item.content;
+        const div = document.createElement("div");
+        div.className = "task-item";
+        if(isOverdue(item.date,item.status)) div.classList.add("overdue");
+        let hist = "";
+        if(item.history?.length){
+            hist+='<div style="margin-top:4px;font-size:12px;color:#666;white-space:pre-wrap;word-break:break-all;max-height:120px;overflow-y:auto;">';
+            item.history.forEach((h,j)=>hist+=`[记录${j+1}] ${h}<br>`);
+            hist+='</div>';
+        }
+        div.innerHTML=`<div class="task-main"><div class="task-text" data-show="${ft}">${ft}</div><div class="task-op">
+            ${canEdit?`<span class="edit-btn" onclick="openEdit(${t},${i})">编辑</span>`:""}
+            ${canEdit?`<span class="del-btn" onclick="delTask(${t},${i})">删除</span>`:""}
+        </div></div>${hist}`;
+        le.appendChild(div);
+        const tr = document.createElement("tr");
+        const dc = isOverdue(item.date,item.status)?"overdue":"";
+        let pcell = "";
+        if(t===2||t===3) pcell=`<td data-show="${item.parent||''}">${item.parent||''}</td>`;
+        tr.innerHTML = `
+            ${pcell}
+            <td data-show="${item.date}" class="${dc}">${item.date}</td>
+            <td data-show="${item.content}">${item.content}</td>
+            <td data-show="${item.status}">
+                <select ${!canEdit?"disabled":""} onchange="setStatus(${t},${i},this.value)">
+                    <option ${item.status==="进行中"?"selected":""}>进行中</option>
+                    <option ${item.status==="已完成"?"selected":""}>已完成</option>
+                    <option ${item.status==="延期"?"selected":""}>延期</option>
+                </select>
+            </td>
+            <td data-show="${item.remark??''}">
+                <input ${!canEdit?"disabled":""} value="${item.remark??''}" onchange="setRemark(${t},${i},this.value)">
+            </td>
+            <td>${canEdit?`<span class="del-btn" onclick="delTask(${t},${i})">删除</span>`:""}</td>`;
+        te.appendChild(tr);
+    });
+}
+
+function openEdit(t,i){
+    editTask={t,i};
+    get(`/task/${viewUid}`).then(d=>{
+        const k = t===1?"l1":t===2?"l2":"week";
+        const item = d[k][i];
+        editTask.oldDate = item.date;
+        document.getElementById("editDate").value = item.date;
+        document.getElementById("editContent").value = item.content;
+        document.getElementById("editReason").value = "";
+        const pb = document.getElementById("editParentBox");
+        const es = document.getElementById("editParent");
+        if(t===1){
+            pb.style.display="none";
+        }else{
+            pb.style.display="block";
+            
+            // 【核心修改】：编辑弹窗中的归属一级任务同样扩大到全团队范围
+            const allTeamL1 = [];
+            const seenl1 = new Set();
+            userList.forEach(u => {
+                if(u.role==="cto" && currentUser && currentUser.role!=="cto") return;
+                const ud = globalTaskData[u.id];
+                if(ud && ud.l1) {
+                    ud.l1.forEach(l1Item => {
+                        const cnt = l1Item.content.trim();
+                        if(!seenl1.has(cnt)) {
+                            seenl1.add(cnt);
+                            allTeamL1.push({ content: l1Item.content, userName: u.name });
+                        }
+                    });
+                }
+            });
+            fillParentSelect("editParent", allTeamL1);
+            es.value = item.parent||"";
+        }
+        document.getElementById("editModal").style.display="flex";
+    })
+}
+
+async function saveEdit(){
+    if(!editTask) return;
+    const {t,i,oldDate} = editTask;
+    const nd = document.getElementById("editDate").value.trim();
+    const nc = document.getElementById("editContent").value.trim();
+    const r = document.getElementById("editReason").value.trim();
+    const p = (t===2||t===3) ? document.getElementById("editParent").value : "";
+    if(!nd||!nc){alert("时间和内容不能为空");return;}
+    if(oldDate!==nd && !r){alert("修改时间必须填写原因！");return;}
+    const d = await get(`/task/${viewUid}`);
+    const k = t===1?"l1":t===2?"l2":"week";
+    const tar = d[k][i];
+    tar.date=nd; tar.content=nc;
+    if(t===2||t===3) tar.parent=p;
+    if(oldDate!==nd){
+        const log = `由${oldDate}改到${nd},修改原因:${r}`;
+        if(!tar.history) tar.history=[];
+        tar.history.push(log);
+    }
+    await post("/task/save",{uid:viewUid,data:d});
+    closeModal("editModal");
+    await refreshTask(); refreshStat();
+}
+
+async function addTask(t){
+    const date = document.getElementById("date"+t).value;
+    const content = document.getElementById("task"+t).value.trim();
+    const parent = (t===2||t===3) ? document.getElementById("parent"+t).value : "";
+    
+    if(!date||!content){alert("请填写完整");return;}
+    // 【核心修改】：仅二级节点任务（t===2）强制校验归属，周任务（t===3）不选 parent 时允许跳过直接添加
+    if(t===2 && !parent){alert("请选择归属一级任务");return;}
+    
+    const taskId = Date.now() + "_" + Math.random().toString(36).substring(2, 9);
+    const item = {id: taskId, date, content, status:"进行中", remark:"", history:[], parent};
+    const syncUserIds = getAddSyncUserIds(viewUid, t);
+    for(const uid of syncUserIds){
+        const d = await get(`/task/${uid}`);
+        const k = t===1?"l1":t===2?"l2":"week";
+        if(!d[k]) d[k] = [];
+        d[k].push(JSON.parse(JSON.stringify(item)));
+        await post("/task/save",{uid,data:d});
+    }
+    
+    document.getElementById("date"+t).value="";
+    document.getElementById("task"+t).value="";
+    await refreshTask(); refreshStat();
+}
+
+async function delTask(t, index){
+    if(!confirm("确定删除？")) return;
+    const key = t === 1 ? "l1" : t === 2 ? "l2" : "week";
+    const currUid = viewUid;
+    let currData = await get(`/task/${currUid}`);
+    if(!currData[key] || !currData[key][index]) return;
+    const targetTask = currData[key][index];
+    const targetId = targetTask.id;
+    const targetContent = targetTask.content;
+    const targetDate = targetTask.date;
+
+    for(const user of userList){
+        let userData = await get(`/task/${user.id}`);
+        if(!userData[key] || userData[key].length === 0) continue;
+
+        let isChanged = false;
+        for(let i = userData[key].length - 1; i >= 0; i--){
+            const currentTask = userData[key][i];
+            if(targetId) {
+                if(currentTask.id === targetId) {
+                    userData[key].splice(i, 1);
+                    isChanged = true;
+                }
+            } else {
+                if(currentTask.content === targetContent && currentTask.date === targetDate) {
+                    userData[key].splice(i, 1);
+                    isChanged = true;
+                }
+            }
+        }
+
+        if(isChanged){
+            await post("/task/save", { uid: user.id, data: userData });
+        }
+    }
+
+    await refreshTask();
+    refreshStat();
+}
+
+async function setStatus(t,i,v){
+    const d = await get(`/task/${viewUid}`);
+    const k = t===1?"l1":t===2?"l2":"week";
+    d[k][i].status = v;
+    await post("/task/save",{uid:viewUid,data:d});
+    await refreshTask(); refreshStat();
+}
+
+async function setRemark(t,i,v){
+    const d = await get(`/task/${viewUid}`);
+    const k = t===1?"l1":t===2?"l2":"week";
+    d[k][i].remark = v;
+    await post("/task/save",{uid:viewUid,data:d});
+    await refreshTask();
+    refreshStat();
+}
+
+function getGroupType(groupName) {
+    if (groupName.includes("硬件")) return 1;
+    if (groupName.includes("软件")) return 2;
+    if (groupName.includes("结构")) return 3;
+    return 99;
+}
+function extractGroupNumber(groupName) {
+    const match = groupName.match(/[一二三四五六七八九十\d]+/);
+    if (!match) return 999;
+    const numStr = match[0];
+    const numberMap = {
+        '一': 1, '二': 2, '三': 3, '四': 4, '五': 5,
+        '六': 6, '七': 7, '八': 8, '九': 9, '十': 10
+    };
+    return numberMap[numStr] ?? parseInt(numStr, 10) ?? 999;
+}
+
+async function refreshStat(){
+    const promises = userList.map(async (u) => {
+        if(u.role!=="cto"|| (currentUser && currentUser.role==="cto")){
+            globalTaskData[u.id] = await get(`/task/${u.id}`);
+        }
+    });
+    await Promise.all(promises);
+
+    const box = document.getElementById("statContainer");
+    box.innerHTML = "";
+
+    const adminUsers = userList.filter(u=>["cto","manager"].includes(u.role));
+    if(adminUsers.length){
+        const tit = document.createElement("div");
+        tit.className="group-title"; tit.innerText="管理层（CTO/经理）";
+        box.appendChild(tit);
+        const r = document.createElement("div"); r.className="group-row";
+        adminUsers.forEach(u=>{
+            if(currentUser && currentUser.role!=="cto" && u.role==="cto")return;
+            r.appendChild(createStatCard(u,globalTaskData[u.id]));
+        });
+        box.appendChild(r);
+    }
+
+    const groupMap = {};
+    userList.forEach(u=>{
+        if(["cto","manager"].includes(u.role))return;
+        if(!groupMap[u.group])groupMap[u.group]=[];
+        groupMap[u.group].push(u);
+    });
+    const sortedGroups = Object.keys(groupMap).sort((a, b) => {
+        const ta = getGroupType(a);
+        const tb = getGroupType(b);
+        if (ta !== tb) return ta - tb;
+        const na = extractGroupNumber(a);
+        const nb = extractGroupNumber(b);
+        return na - nb;
+    });
+    sortedGroups.forEach(g=>{
+        const t = document.createElement("div");
+        t.className="group-title"; t.innerText=`小组：${g}`;
+        box.appendChild(t);
+        const r = document.createElement("div"); r.className="group-row";
+        groupMap[g].forEach(u=>r.appendChild(createStatCard(u,globalTaskData[u.id])));
+        box.appendChild(r);
+    });
+    const sumBody = document.getElementById("level1Summary");
+    sumBody.innerHTML = "";
+    const items = [];
+    userList.forEach(u=>{
+        if(currentUser && currentUser.role!=="cto" && u.role==="cto")return;
+        const td = globalTaskData[u.id];
+        if(!td||!td.l1)return;
+        td.l1.forEach(it=>{
+            items.push({user:u,date:it.date,content:it.content,status:it.status,remark:it.remark||""});
+        });
+    });
+    const final = {};
+    items.forEach(it=>{
+        const key = it.content.trim();
+        const curr = roleLevel[it.user.role];
+        if(!final[key] || curr < roleLevel[final[key].user.role]){
+            final[key] = it;
+        }
+    });
+    Object.values(final).forEach(it=>{
+        const tr = document.createElement("tr");
+        const dc = isOverdue(it.date,it.status)?"overdue":"";
+        tr.innerHTML = `
+            <td data-show="${it.user.name}">${it.user.name}</td>
+            <td data-show="${it.date}" class="${dc}">${it.date}</td>
+            <td data-show="${it.content}">${it.content}</td>
+            <td data-show="${it.status}">${it.status}</td>
+            <td data-show="${it.remark}">${it.remark}</td>`;
+        sumBody.appendChild(tr);
+    });
+}
+
+function createStatCard(user,data){
+    const taskData = data || {l1:[], l2:[], week:[]};
+    function p(list){
+        if(!list||list.length===0)return "100%";
+        const ok=list.filter(x=>x.status==="已完成").length;
+        return Math.round(ok/list.length*100)+"%";
+    }
+    const d=document.createElement("div");d.className="stat-card";
+    d.innerHTML=`<h4>${user.name}（${roleText[user.role]}）</h4>
+    <div class="stat-row">一级任务：${p(taskData.l1)}</div>
+    <div class="stat-row">二级任务：${p(taskData.l2)}</div>
+    <div class="stat-row">周任务：${p(taskData.week)}</div>`;
+    return d;
+}
+
+function exportExcel(){
+    const wb=XLSX.utils.book_new();
+    const arr=[["所属人","角色","小组","任务类型","归属一级","时间","内容","状态","备注"]];
+    for(const uid in globalTaskData){
+        const u=userList.find(x=>x.id==uid);if(!u)continue;
+        const d=globalTaskData[uid];
+        const ts=[
+            {n:"一级时间节点",list:d.l1||[]},
+            {n:"二级时间节点",list:d.l2||[]},
+            {n:"周任务",list:d.week||[]}
+        ];
+        ts.forEach(t=>{
+            t.list.forEach(it=>{
+                arr.push([u.name,roleText[u.role],u.group,t.n,it.parent||"",it.date,it.content,it.status,it.remark||""]);
+            });
+        });
+    }
+    const ws=XLSX.utils.aoa_to_sheet(arr);
+    XLSX.utils.book_append_sheet(wb,ws,"任务数据");
+    XLSX.writeFile(wb,"团队任务数据.xlsx");
+}
+
+document.getElementById("addUserBtn").onclick=()=>{
+    document.getElementById("newUserName").value="";
+    document.getElementById("newUserGroup").value="默认组";
+    const s=document.getElementById("newUserRole");s.innerHTML="";
+    if(currentUser.role==="cto"){s.innerHTML+='<option value="manager">经理</option>';}
+    if(currentUser.role==="cto"||currentUser.role==="manager"){s.innerHTML+='<option value="leader">组长</option>';}
+    s.innerHTML+='<option value="member">组员</option>';
+    document.getElementById("addUserModal").style.display="flex";
+};
+async function saveNewUser(){
+    const n=document.getElementById("newUserName").value.trim();
+    const r=document.getElementById("newUserRole").value;
+    const g=document.getElementById("newUserGroup").value.trim();
+    if(!n){alert("请输入姓名");return;}
+    const res=await post("/user/add",{name:n,role:r,group:g,pwd:btoa("8888")});
+    if(res.ok){
+        closeModal("addUserModal");
+        await loadUsers();
+        refreshAll();
+        alert("添加成功");
+    } else alert(res.msg);
+}
+function openEditUser(id){
+    const u=userList.find(x=>x.id==id);if(!u)return;
+    document.getElementById("editUserId").value=u.id;
+    document.getElementById("editUserName").value=u.name;
+    document.getElementById("editUserGroup").value=u.group;
+    const s=document.getElementById("editUserRole");s.innerHTML="";
+    const allow=[];
+    if(currentUser.role==="cto")allow.push("manager","leader","member");
+    if(currentUser.role==="manager")allow.push("leader","member");
+    if(currentUser.role==="leader")allow.push("member");
+    allow.forEach(r=>{s.innerHTML+=`<option value="${r}" ${r===u.role?"selected":""}>${roleText[r]}</option>`;});
+    document.getElementById("editUserModal").style.display="flex";
+}
+async function saveEditUser(){
+    const id=document.getElementById("editUserId").value;
+    const n=document.getElementById("editUserName").value.trim();
+    const r=document.getElementById("editUserRole").value;
+    const g=document.getElementById("editUserGroup").value.trim();
+    if(!n){alert("姓名不能为空");return;}
+    const res=await post("/user/edit",{id,name:n,role:r,group:g});
+    if(res.ok){
+        closeModal("editUserModal");
+        await loadUsers();
+        refreshAll();
+        alert("修改成功");
+    } else alert(res.msg);
+}
+async function deleteUser(id){if(!confirm("确定删除？"))return;const res=await post("/user/delete",{id});if(res.ok){await loadUsers();refreshAll();alert("删除成功");}else alert(res.msg);}
+document.getElementById("editPwdBtn").onclick=()=>{
+    document.getElementById("oldPwd").value="";
+    document.getElementById("newPwd").value="";
+    document.getElementById("confirmPwd").value="";
+    document.getElementById("editPwdModal").style.display="flex";
+};
+async function saveMyPwd(){
+    const o=document.getElementById("oldPwd").value;
+    const n=document.getElementById("newPwd").value;
+    const c=document.getElementById("confirmPwd").value;
+    if(!o||!n||!c){alert("请填写完整");return;}
+    if(n!==c){alert("两次密码不一致");return;}
+    if(currentUser.pwd!==btoa(o)){alert("原密码错误");return;}
+    await post("/user/update-pwd",{id:currentUser.id,pwd:btoa(n)});
+    closeModal("editPwdModal");alert("修改成功，请重新登录");logout();
+}
+document.getElementById("resetPwdBtn").onclick=async()=>{
+    const s=document.getElementById("resetUserSelect");s.innerHTML="";
+    userList.forEach(u=>{if(canViewUser(u)){const o=document.createElement("option");o.value=u.id;o.textContent=u.name;s.appendChild(o);}});
+    document.getElementById("resetNewPwd").value="8888";
+    document.getElementById("resetPwdModal").style.display="flex";
+};
+async function doResetPwd(){
+    const uid=document.getElementById("resetUserSelect").value;
+    const p=document.getElementById("resetNewPwd").value;
+    await post("/user/update-pwd",{id:Number(uid),pwd:btoa(p)});
+    closeModal("resetPwdModal");alert("重置成功");
+}
+
+// 悬浮提示
+$(function(){
+    $(document).on("mouseenter","[data-show]",function(e){
+        $(".easy-tooltip").html($(this).attr("data-show")).stop().fadeIn(100);
+    }).on("mouseleave","[data-show]",function(){
+        $(".easy-tooltip").stop().fadeOut(100);
+    }).on("mousemove","[data-show]",function(e){
+        $(".easy-tooltip").css({left:e.pageX+10,top:e.pageY+10});
+    });
+});
+window.onload = loadUsers;
+</script>
+</body>
+</html>
