@@ -224,7 +224,7 @@
                     <input type="date" id="date3">
                     <select id="parent3" style="flex:1;min-width:120px;"></select>
                     <input type="text" placeholder="任务内容" id="task3">
-                    <button class="add-btn" onclick="addTask(2)">添加</button>
+                    <button class="add-btn" onclick="addTask(3)">添加</button>
                 </div>
             </div>
         </div>
@@ -755,6 +755,10 @@ async function saveEdit(){
     const r = document.getElementById("editReason").value.trim();
     const p = (t===2||t===3) ? document.getElementById("editParent").value : "";
     if(!nd||!nc){alert("时间和内容不能为空");return;}
+    
+    // 逻辑调整：二级任务（t===2）在编辑保存时强制要求一级任务，周任务（t===3）可选不拦截
+    if(t===2 && !p){alert("二级任务必须选择归属一级任务");return;}
+    
     if(oldDate!==nd && !r){alert("修改时间必须填写原因！");return;}
     const d = await get(`/task/${viewUid}`);
     const k = t===1?"l1":t===2?"l2":"week";
@@ -775,6 +779,8 @@ async function addTask(t){
     const content = document.getElementById("task"+t).value.trim();
     const parent = (t===2||t===3) ? document.getElementById("parent"+t).value : "";
     if(!date||!content){alert("请填写完整");return;}
+    
+    // 逻辑调整：仅当二级任务（t===2）时，才强制拦截没有一级任务的情况
     if(t===2 && !parent){alert("请选择归属一级任务");return;}
     
     const taskId = Date.now() + "_" + Math.random().toString(36).substring(2, 9);
@@ -929,7 +935,6 @@ async function refreshStat(){
         if(!final[key] || curr < (roleLevel[final[key].user.role] || 0)){ final[key] = it; }
     });
 
-    // 调整：全团队一级任务按时间由远到近进行升序/正序排列（最早的时间排在最前面）
     const sortedL1Items = Object.values(final).sort((a, b) => new Date(a.date) - new Date(b.date));
 
     sortedL1Items.forEach(it=>{
@@ -950,7 +955,6 @@ async function refreshStat(){
         sumBodyL2.innerHTML = "";
         const itemsL2 = [];
         
-        // 快捷建立一级任务名与日期的映射
         const l1DateMap = {};
         sortedL1Items.forEach(it => {
             l1DateMap[it.content.trim()] = it.date;
@@ -978,23 +982,21 @@ async function refreshStat(){
 
         const l2List = Object.values(finalL2);
 
-        // 绑定所属一级任务的时间
         l2List.forEach(it => {
             const pTrim = it.parent ? it.parent.trim() : "";
-            it.parentDate = l1DateMap[pTrim] || "1970-01-01"; // 找不到归属一级的扔最下边
+            it.parentDate = l1DateMap[pTrim] || "1970-01-01"; 
         });
 
-        // 调整：归属同一一级任务的二级任务放一起；排序按一级任务时间由远及近，二级自身时间也按由远及近
         l2List.sort((a, b) => {
             const dateA = new Date(a.parentDate);
             const dateB = new Date(b.parentDate);
-            if (dateA - dateB !== 0) return dateA - dateB; // 一级时间远到近正序
+            if (dateA - dateB !== 0) return dateA - dateB; 
             
             const pA = a.parent || "";
             const pB = b.parent || "";
-            if (pA !== pB) return pA.localeCompare(pB, 'zh'); // 按父任务文本分组聚合
+            if (pA !== pB) return pA.localeCompare(pB, 'zh'); 
             
-            return new Date(a.date) - new Date(b.date); // 同父任务内，二级自身时间正序
+            return new Date(a.date) - new Date(b.date); 
         });
 
         l2List.forEach(it=>{
