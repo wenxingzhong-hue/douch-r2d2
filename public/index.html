@@ -139,7 +139,7 @@
 
 <div id="mainPage">
     <div class="top-bar">
-        <h2>团队任务管理</h2>
+        <h2>团队任务 management</h2>
         <div class="btn-group">
             <span id="currentUserInfo" style="color:#666;font-size:14px;margin-right:10px;"></span>
             <button class="login-trigger-btn" id="loginTriggerBtn" onclick="openLoginModal()">登录系统</button>
@@ -162,12 +162,23 @@
     <div class="dashboard">
         <h3>📊 任务完成统计</h3>
         <div id="statContainer"></div>
+        
         <div class="summary-box">
             <h4>📋 全团队一级任务汇总</h4>
             <div style="margin-top:10px;max-height:300px;overflow-y:auto;">
                 <table>
                     <thead><tr><th>所属人</th><th>时间</th><th>任务内容</th><th>状态</th><th>备注</th></tr></thead>
                     <tbody id="level1Summary"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="summary-box" style="margin-top: 20px;">
+            <h4>📋 全团队二级任务汇总</h4>
+            <div style="margin-top:10px;max-height:300px;overflow-y:auto;">
+                <table>
+                    <thead><tr><th>所属人</th><th>归属一级任务</th><th>时间</th><th>任务内容</th><th>状态</th><th>备注</th></tr></thead>
+                    <tbody id="level2Summary"></tbody>
                 </table>
             </div>
         </div>
@@ -213,7 +224,7 @@
                     <input type="date" id="date3">
                     <select id="parent3" style="flex:1;min-width:120px;"></select>
                     <input type="text" placeholder="任务内容" id="task3">
-                    <button class="add-btn" onclick="addTask(3)">添加</button>
+                    <button class="add-btn" onclick="addTask(2)">添加</button>
                 </div>
             </div>
         </div>
@@ -304,7 +315,9 @@
         </div>
         <div class="form-item">
             <label>小组</label>
-            <input type="text" id="newUserGroup">
+            <div id="newUserGroupContainer">
+                <input type="text" id="newUserGroup">
+            </div>
         </div>
         <button class="login-btn" onclick="saveNewUser()">保存</button>
     </div>
@@ -325,7 +338,9 @@
         </div>
         <div class="form-item">
             <label>小组</label>
-            <input type="text" id="editUserGroup">
+            <div id="editUserGroupContainer">
+                <input type="text" id="editUserGroup">
+            </div>
         </div>
         <button class="login-btn" onclick="saveEditUser()">保存</button>
     </div>
@@ -539,7 +554,7 @@ async function refreshAll(){
     refreshUserSelect();
     refreshPerm();
     refreshUserTable();
-    await refreshStat(); // 确保看板和全局缓存加载完毕
+    await refreshStat(); 
     await refreshTask();
 }
 
@@ -622,7 +637,6 @@ function fillParentSelect(selId, list){
     });
 }
 
-// 优化点1：提取全团队去重后的一级任务列表
 function getAllTeamLevel1Tasks() {
     const allL1 = [];
     const seen = new Set();
@@ -659,7 +673,6 @@ async function refreshTask(){
         l3 = l3.filter(x=>x.status===f);
     }
     
-    // 优化：将可选的一级任务范围扩大到全团队
     const allTeamL1 = getAllTeamLevel1Tasks();
     fillParentSelect("parent2", allTeamL1);
     fillParentSelect("parent3", allTeamL1);
@@ -727,7 +740,6 @@ function openEdit(t, i){
         const es = document.getElementById("editParent");
         if(t===1){ pb.style.display="none"; }else{
             pb.style.display="block";
-            // 优化：编辑时也全面使用全团队的一级任务数据
             fillParentSelect("editParent", getAllTeamLevel1Tasks());
             es.value = item.parent||"";
         }
@@ -763,8 +775,6 @@ async function addTask(t){
     const content = document.getElementById("task"+t).value.trim();
     const parent = (t===2||t===3) ? document.getElementById("parent"+t).value : "";
     if(!date||!content){alert("请填写完整");return;}
-    
-    // 优化点2：二级节点(t===2)时一级任务必须选择，周任务(t===3)不再拦截，允许为空
     if(t===2 && !parent){alert("请选择归属一级任务");return;}
     
     const taskId = Date.now() + "_" + Math.random().toString(36).substring(2, 9);
@@ -845,7 +855,7 @@ async function refreshStat(){
     const reqs = userList.map(async (u) => {
         if(!currentUser || u.role !== "cto" || currentUser.role === "cto"){
             map[u.id] = await get(`/task/${u.id}`);
-            globalTaskData[u.id] = map[u.id]; // 优化：将所有团队数据在此处同步至全局缓存中
+            globalTaskData[u.id] = map[u.id]; 
         }
     });
     await Promise.all(reqs);
@@ -896,6 +906,7 @@ async function refreshStat(){
         box.appendChild(r);
     });
 
+    // ================= 一级任务汇总 =================
     const sumBody = document.getElementById("level1Summary");
     sumBody.innerHTML = "";
     const items = [];
@@ -917,7 +928,11 @@ async function refreshStat(){
         const curr = roleLevel[it.user.role] || 0;
         if(!final[key] || curr < (roleLevel[final[key].user.role] || 0)){ final[key] = it; }
     });
-    Object.values(final).forEach(it=>{
+
+    // 优化1：全团队一级任务按时间由近到远进行倒序排列（最新排最前）
+    const sortedL1Items = Object.values(final).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    sortedL1Items.forEach(it=>{
         const tr = document.createElement("tr");
         const dc = isOverdue(it.date,it.status)?"overdue":"";
         tr.innerHTML = `
@@ -928,6 +943,73 @@ async function refreshStat(){
             <td data-show="${it.remark}">${it.remark}</td>`;
         sumBody.appendChild(tr);
     });
+
+    // ================= 优化2：全团队二级任务汇总 =================
+    const sumBodyL2 = document.getElementById("level2Summary");
+    if (sumBodyL2) {
+        sumBodyL2.innerHTML = "";
+        const itemsL2 = [];
+        
+        // 快捷建立一级任务名与日期的映射
+        const l1DateMap = {};
+        sortedL1Items.forEach(it => {
+            l1DateMap[it.content.trim()] = it.date;
+        });
+
+        userList.forEach(u=>{
+            if(currentUser && currentUser.role!=="cto" && u.role==="cto")return;
+            if(currentUser && currentUser.role === "hw_manager" && !(u.group && u.group.includes("硬件"))) return;
+            if(currentUser && currentUser.role === "sw_manager" && !(u.group && u.group.includes("软件"))) return;
+            if(currentUser && currentUser.role === "mech_manager" && !(u.group && u.group.includes("结构"))) return;
+
+            const td = map[u.id];
+            if(!td||!td.l2)return;
+            td.l2.forEach(it=>{
+                itemsL2.push({user:u,date:it.date,content:it.content,status:it.status,remark:it.remark||"",parent:it.parent||""});
+            });
+        });
+
+        const finalL2 = {};
+        itemsL2.forEach(it=>{
+            const key = (it.parent + "|||" + it.content).trim();
+            const curr = roleLevel[it.user.role] || 0;
+            if(!finalL2[key] || curr < (roleLevel[finalL2[key].user.role] || 0)){ finalL2[key] = it; }
+        });
+
+        const l2List = Object.values(finalL2);
+
+        // 绑定所属一级任务的时间
+        l2List.forEach(it => {
+            const pTrim = it.parent ? it.parent.trim() : "";
+            it.parentDate = l1DateMap[pTrim] || "1970-01-01"; // 找不到归属一级的扔最下边
+        });
+
+        // 排序规则：归属同一一级任务的二级任务放一起；排序按一级任务时间由近及远
+        l2List.sort((a, b) => {
+            const dateA = new Date(a.parentDate);
+            const dateB = new Date(b.parentDate);
+            if (dateB - dateA !== 0) return dateB - dateA; // 一级时间近到远降序
+            
+            const pA = a.parent || "";
+            const pB = b.parent || "";
+            if (pA !== pB) return pA.localeCompare(pB, 'zh'); // 按父任务文本分组聚合
+            
+            return new Date(b.date) - new Date(a.date); // 同父任务内，二级自身时间倒序
+        });
+
+        l2List.forEach(it=>{
+            const tr = document.createElement("tr");
+            const dc = isOverdue(it.date,it.status)?"overdue":"";
+            tr.innerHTML = `
+                <td data-show="${it.user.name}">${it.user.name}</td>
+                <td data-show="${it.parent}">${it.parent}</td>
+                <td data-show="${it.date}" class="${dc}">${it.date}</td>
+                <td data-show="${it.content}">${it.content}</td>
+                <td data-show="${it.status}">${it.status}</td>
+                <td data-show="${it.remark}">${it.remark}</td>`;
+            sumBodyL2.appendChild(tr);
+        });
+    }
 }
 
 function createStatCard(user,data){
@@ -968,9 +1050,26 @@ function exportExcel(){
     XLSX.writeFile(wb,"团队任务数据.xlsx");
 }
 
+// 优化3：组长创建组员时，小组锁定为组长自身所在组
 document.getElementById("addUserBtn").onclick=()=>{
     document.getElementById("newUserName").value="";
-    document.getElementById("newUserGroup").value="默认组";
+    
+    const container = document.getElementById("newUserGroupContainer");
+    if(currentUser && currentUser.role === "leader"){
+        // 支持组长同时拥有多个组，用常见分隔符切分
+        const groups = currentUser.group ? currentUser.group.split(/[,，、/|;；\s]+/).filter(Boolean) : ["默认组"];
+        if(groups.length > 1){
+            let selHtml = '<select id="newUserGroup">';
+            groups.forEach(g => { selHtml += `<option value="${g}">${g}</option>`; });
+            selHtml += '</select>';
+            container.innerHTML = selHtml;
+        }else{
+            container.innerHTML = `<input type="text" id="newUserGroup" value="${groups[0]}" readonly class="locked" disabled>`;
+        }
+    }else{
+        container.innerHTML = '<input type="text" id="newUserGroup" value="默认组">';
+    }
+
     const s=document.getElementById("newUserRole");s.innerHTML="";
     if(currentUser.role==="cto"){
         s.innerHTML+='<option value="hw_manager">硬件经理</option>';
@@ -979,8 +1078,14 @@ document.getElementById("addUserBtn").onclick=()=>{
     }
     if(currentUser.role==="cto"|| isManager()){ s.innerHTML+='<option value="leader">组长</option>'; }
     s.innerHTML+='<option value="member">组员</option>';
+    
+    if(currentUser && currentUser.role === "leader"){
+        s.innerHTML = '<option value="member">组员</option>';
+    }
+    
     document.getElementById("addUserModal").style.display="flex";
 };
+
 async function saveNewUser(){
     const n=document.getElementById("newUserName").value.trim();
     const r=document.getElementById("newUserRole").value;
@@ -989,11 +1094,28 @@ async function saveNewUser(){
     const res=await post("/user/add",{name:n,role:r,group:g,pwd:btoa("8888")});
     if(res.ok){ closeModal("addUserModal"); await loadUsers(); refreshAll(); alert("添加成功"); } else alert(res.msg);
 }
+
+// 优化3：组长编辑组员时，小组锁定在组长范围内
 function openEditUser(id){
     const u=userList.find(x=>x.id==id);if(!u)return;
     document.getElementById("editUserId").value=u.id;
     document.getElementById("editUserName").value=u.name;
-    document.getElementById("editUserGroup").value=u.group;
+    
+    const container = document.getElementById("editUserGroupContainer");
+    if(currentUser && currentUser.role === "leader"){
+        const groups = currentUser.group ? currentUser.group.split(/[,，、/|;；\s]+/).filter(Boolean) : ["默认组"];
+        if(groups.length > 1){
+            let selHtml = '<select id="editUserGroup">';
+            groups.forEach(g => { selHtml += `<option value="${g}" ${g===u.group?"selected":""}>${g}</option>`; });
+            selHtml += '</select>';
+            container.innerHTML = selHtml;
+        }else{
+            container.innerHTML = `<input type="text" id="editUserGroup" value="${groups[0]}" readonly class="locked" disabled>`;
+        }
+    }else{
+        container.innerHTML = `<input type="text" id="editUserGroup" value="${u.group}">`;
+    }
+
     const s=document.getElementById("editUserRole");s.innerHTML="";
     const allow=[];
     if(currentUser.role==="cto")allow.push("hw_manager","sw_manager","mech_manager","manager","leader","member");
@@ -1002,6 +1124,7 @@ function openEditUser(id){
     allow.forEach(r=>{s.innerHTML+=`<option value="${r}" ${r===u.role?"selected":""}>${roleText[r]}</option>`;});
     document.getElementById("editUserModal").style.display="flex";
 }
+
 async function saveEditUser(){
     const id=document.getElementById("editUserId").value;
     const n=document.getElementById("editUserName").value.trim();
@@ -1011,6 +1134,7 @@ async function saveEditUser(){
     const res=await post("/user/edit",{id,name:n,role:r,group:g});
     if(res.ok){ closeModal("editUserModal"); await loadUsers(); refreshAll(); alert("修改成功"); } else alert(res.msg);
 }
+
 async function deleteUser(id){if(!confirm("确定删除？"))return;const res=await post("/user/delete",{id});if(res.ok){await loadUsers();refreshAll();alert("删除成功");}else alert(res.msg);}
 document.getElementById("editPwdBtn").onclick=()=>{
     document.getElementById("oldPwd").value="";
