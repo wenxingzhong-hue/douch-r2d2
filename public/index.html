@@ -50,7 +50,7 @@
         .group-row{display:flex;gap:15px;flex-wrap:wrap;margin-bottom:15px;}
         .stat-card{border:1px solid #eee;padding:15px;border-radius:8px;min-width:220px;background:#fafbfc;}
         .stat-card h4{margin-bottom:8px;color:#333;}
-        .stat-row">display:flex;justify-content:space-between;margin:4px 0;font-size:14px;}
+        .stat-row{display:flex;justify-content:space-between;margin:4px 0;font-size:14px;}
         .summary-box{margin-top:20px;padding-top:16px;border-top:1px dashed #eee;}
 
         .container{
@@ -760,6 +760,7 @@ async function saveEdit(){
     const r = document.getElementById("editReason").value.trim();
     const p = (t===2||t===3) ? document.getElementById("editParent").value : "";
     if(!nd||!nc){alert("时间和内容不能为空");return;}
+    if(t===2 && !p){alert("二级任务必须选择归属一级任务");return;}
     if(oldDate!==nd && !r){alert("修改时间必须填写原因！");return;}
     const d = await get(`/task/${viewUid}`);
     const k = t===1?"l1":t===2?"l2":"week";
@@ -911,7 +912,7 @@ async function refreshStat(){
         box.appendChild(r);
     });
 
-    // ================= 一级任务汇总（恢复为升序 a - b） =================
+    // ================= 一级任务汇总 =================
     const sumBody = document.getElementById("level1Summary");
     sumBody.innerHTML = "";
     const items = [];
@@ -934,7 +935,6 @@ async function refreshStat(){
         if(!final[key] || curr < (roleLevel[final[key].user.role] || 0)){ final[key] = it; }
     });
 
-    // 修正：恢复为升序排序，时间由远到近
     const sortedL1Items = Object.values(final).sort((a, b) => new Date(a.date) - new Date(b.date));
 
     sortedL1Items.forEach(it=>{
@@ -949,7 +949,7 @@ async function refreshStat(){
         sumBody.appendChild(tr);
     });
 
-    // ================= 全团队二级任务汇总（恢复为升序 a - b） =================
+    // ================= 全团队二级任务汇总 =================
     const sumBodyL2 = document.getElementById("level2Summary");
     if (sumBodyL2) {
         sumBodyL2.innerHTML = "";
@@ -987,7 +987,6 @@ async function refreshStat(){
             it.parentDate = l1DateMap[pTrim] || "1970-01-01"; 
         });
 
-        // 修正：恢复为升序排序，时间由远到近
         l2List.sort((a, b) => {
             const dateA = new Date(a.parentDate);
             const dateB = new Date(b.parentDate);
@@ -1018,8 +1017,8 @@ async function refreshStat(){
 function createStatCard(user,data){
     function p(list){
         if(!list||list.length===0)return "100%";
-        const ok=list.filter(x=>x.status==="已完成").length;
-        return Math.round(ok/list.length*100)+"%";
+        const delayed = list.filter(x=>x.status==="延期").length;
+        return Math.round((1 - delayed/list.length)*100)+"%";
     }
     const d=document.createElement("div");d.className="stat-card";
     const rName = roleText[user.role] || user.role;
