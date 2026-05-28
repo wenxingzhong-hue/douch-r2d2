@@ -5,7 +5,7 @@ const { MongoClient } = require('mongodb');
 // ==================== ⚙️ 排序方向全局配置 ⚙️ ====================
 // 默认 true 代表升序（6月1日排在7月1日上面）。
 // 如果部署后由于前端特殊的渲染机制导致汇总表依然反了，请直接把这里的 true 改为 false 即可！
-const SORT_ASCENDING = true; 
+const SORT_ASCENDING = false; 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
