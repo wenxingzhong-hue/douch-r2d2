@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>团队任务管理系统</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -22,40 +22,41 @@
             display:none;
             white-space:pre-wrap;
             box-shadow:0 2px 6px #00000033;
+            word-break: break-all;
         }
 
         .form-item{margin:16px 0;}
         .form-item label{display:block;margin-bottom:6px;font-weight:bold;color:#333;}
         .form-item input,.form-item select,.form-item textarea{
-            width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;background:#fff !important;color:#333;
+            width:100%;padding:12px;border:1px solid #ddd;border-radius:6px;font-size:15px;background:#fff !important;color:#333;
         }
-        .login-btn{width:100%;padding:12px;background:#2b7cc7;color:#fff;border:none;border-radius:6px;font-size:16px;cursor:pointer;margin-top:10px;}
+        .login-btn{width:100%;padding:14px;background:#2b7cc7;color:#fff;border:none;border-radius:6px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:10px;}
 
-        .top-bar{display:flex;justify-content:space-between;align-items:center;background:#fff;padding:16px 20px;border-radius:10px;margin-bottom:20px;box-shadow:0 2px 10px #00000010;flex-wrap:wrap;gap:10px;}
-        .top-bar h2{color:#2b7cc7;}
-        .btn-group{display:flex;align-items:center;gap:8px;}
-        .btn-group button{padding:8px 12px;border:none;border-radius:4px;cursor:pointer;}
-        .login-trigger-btn{background:#2b7cc7;color:white;font-weight:bold;}
+        .top-bar{display:flex;justify-content:space-between;align-items:center;background:#fff;padding:16px 20px;border-radius:10px;margin-bottom:20px;box-shadow:0 2px 10px #00000010;flex-wrap:wrap;gap:15px;}
+        .top-bar h2{color:#2b7cc7; font-size: 22px;}
+        .btn-group{display:flex;align-items:center;gap:10px; flex-wrap: wrap;}
+        .btn-group button{padding:10px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px; font-weight:bold;}
+        .login-trigger-btn{background:#2b7cc7;color:white;}
         .add-user-btn{background:#2b7cc7;color:white;}
         .edit-pwd-btn{background:#16a4fa;color:white;}
         .reset-pwd-btn,.logout-btn{background:#e53e3e;color:white;}
         .export-btn{background:#67c23a;color:white;}
 
         .filter-wrap{background:#fff;padding:15px;border-radius:10px;margin:20px 0;display:flex;gap:15px;align-items:center;flex-wrap:wrap;}
-        .filter-wrap select{padding:6px;border-radius:4px;border:1px solid #ddd;}
+        .filter-wrap select{padding:8px;border-radius:6px;border:1px solid #ddd; font-size: 14px;}
 
-        .dashboard{background:#fff;padding:20px;border-radius:10px;margin-bottom:20px;}
+        .dashboard{background:#fff;padding:20px;border-radius:10px;margin-bottom:20px; box-shadow:0 2px 8px #00000008;}
         .dashboard h3{color:#2b7cc7;margin-bottom:16px;}
-        .group-title{font-size:16px;font-weight:bold;color:#2b7cc7;margin:12px 0 8px;}
+        .group-title{font-size:16px;font-weight:bold;color:#2b7cc7;margin:16px 0 10px;}
         .group-row{display:flex;gap:15px;flex-wrap:wrap;margin-bottom:15px;}
-        .stat-card{border:1px solid #eee;padding:15px;border-radius:8px;min-width:220px;background:#fafbfc;}
-        .stat-card h4{margin-bottom:8px;color:#333;}
-        .stat-row{display:flex;justify-content:space-between;margin:4px 0;font-size:14px;}
-        .summary-box{margin-top:20px;padding-top:16px;border-top:1px dashed #eee;}
+        .stat-card{border:1px solid #eee;padding:16px;border-radius:8px;min-width:240px;background:#fafbfc;flex:1;}
+        .stat-card h4{margin-bottom:10px;color:#333;font-size:16px;}
+        .stat-row{display:flex;justify-content:space-between;margin:6px 0;font-size:14px;}
+        .summary-box{margin-top:25px;padding-top:20px;border-top:1px dashed #ddd;}
 
         .container{
             display:grid;
-            grid-template-columns: 28% 70%;
+            grid-template-columns: 32% 66%;
             gap:2%;
             width:100%;
             margin-top:20px;
@@ -63,49 +64,55 @@
         .left-panel, .right-panel{
             display:flex;
             flex-direction:column;
-            gap:15px;
+            gap:20px;
         }
         .block-normal{
-            height:240px;
+            height:280px;
             background:#fff;
             border-radius:10px;
-            padding:15px;
+            padding:16px;
             box-shadow:0 2px 8px #00000010;
             display:flex;
             flex-direction:column;
         }
         .block-large{
-            height:480px;
+            height:500px;
             background:#fff;
             border-radius:10px;
-            padding:15px;
+            padding:16px;
             box-shadow:0 2px 8px #00000010;
             display:flex;
             flex-direction:column;
         }
 
-        .section-title{color:#2b7cc7;margin-bottom:10px;}
+        .section-title{color:#2b7cc7;margin-bottom:12px;font-weight:bold;font-size:16px;}
         .content-box{
             flex:1;
             border:1px solid #eee;
             border-radius:6px;
-            padding:8px;
-            overflow-y:auto;
+            padding:10px;
+            overflow:auto;
             background:#fafbfc;
         }
 
-        .task-item{padding:6px 8px;background:#fff;margin-bottom:8px;border-radius:4px;border-left:3px solid #2b7cc7;font-size:13px;}
-        .task-item.overdue{border-left-color:#f56c6c;background:#fef0f0;}
-        .task-main{display:flex;justify-content:space-between;align-items:center;}
-        .task-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%;}
-        .task-op{display:flex;gap:6px;}
-        .edit-btn,.del-btn{cursor:pointer;padding:2px 4px;border-radius:2px;font-size:12px;}
-        .edit-btn{color:#2b7cc7;border:1px solid #2b7cc7;}
-        .del-btn{color:#e53e3e;border:1px solid #e53e3e;}
+        /* 优化输入框布局与尺寸 */
+        .input-row { display:flex; gap:10px; margin-top:12px; align-items: stretch; }
+        .input-row input[type="text"] { flex: 2; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; }
+        .input-row input[type="date"], .input-row select { flex: 1.2; padding:10px 8px; border:1px solid #ddd; border-radius:6px; font-size:14px; }
+        .add-btn { padding:0 20px; background:#2b7cc7; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer; white-space:nowrap; }
 
-        table{width:100%;border-collapse:collapse;background:#fff;table-layout:fixed;}
+        .task-item{padding:8px 10px;background:#fff;margin-bottom:10px;border-radius:6px;border-left:4px solid #2b7cc7;font-size:14px; box-shadow:0 1px 3px #0000000a;}
+        .task-item.overdue{border-left-color:#f56c6c;background:#fef0f0;}
+        .task-main{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+        .task-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
+        .task-op{display:flex;gap:8px;flex-shrink:0;}
+        .edit-btn,.del-btn{cursor:pointer;padding:4px 8px;border-radius:4px;font-size:12px; font-weight:bold;}
+        .edit-btn{color:#2b7cc7;border:1px solid #2b7cc7;background:#fff;}
+        .del-btn{color:#e53e3e;border:1px solid #e53e3e;background:#fff;}
+
+        table{width:100%;border-collapse:collapse;background:#fff;table-layout:fixed;min-width:600px;}
         th,td{
-            padding:10px;
+            padding:12px 10px;
             text-align:left;
             border-bottom:1px solid #eee;
             font-size:14px;
@@ -113,24 +120,56 @@
             overflow:hidden;
             text-overflow:ellipsis;
         }
-        th{background:#f7fafc;}
+        th{background:#f7fafc;font-weight:bold;}
         td.overdue{color:#f56c6c;font-weight:bold;}
+        
+        td select, td input { padding:6px; border:1px solid #ddd; border-radius:4px; font-size:13px; width: 100%; }
         .locked:disabled{background:#f1f1f1;cursor:not-allowed;}
 
         .modal{
             position:fixed;top:0;left:0;width:100%;height:100%;
-            background:rgba(0,0,0,0.7);display:none;justify-content:center;align-items:center;z-index:999;
+            background:rgba(0,0,0,0.6);display:none;justify-content:center;align-items:center;z-index:999;
         }
         .modal-content{
             background:#fff !important;
-            padding:25px;border-radius:10px;width:460px;position:relative;z-index:1000;
-            color:#333 !important; box-shadow:0 4px 20px #00000033;
+            padding:30px;border-radius:12px;width:480px;max-width:90%;position:relative;z-index:1000;
+            color:#333 !important; box-shadow:0 10px 30px #00000044;
         }
-        .close-modal{position:absolute;top:15px;right:15px;font-size:20px;cursor:pointer;color:#333;background:#fff;padding:2px;}
+        .close-modal{position:absolute;top:15px;right:15px;font-size:24px;cursor:pointer;color:#999;background:none;border:none;}
+        .close-modal:hover{color:#333;}
         .hide{display:none!important;}
         
-        .edit-row-btn{color:#2b7cc7; cursor:pointer; margin-right:10px; font-weight:bold;}
+        .edit-row-btn{color:#2b7cc7; cursor:pointer; margin-right:12px; font-weight:bold;}
         .delete-row-btn{color:#e53e3e; cursor:pointer; font-weight:bold;}
+
+        /* ================= 移动端终极自适应优化 ================= */
+        @media screen and (max-width: 850px) {
+            body { padding: 12px; }
+            .top-bar { flex-direction: column; align-items: stretch; padding: 15px; }
+            .btn-group { width: 100%; justify-content: flex-start; }
+            .btn-group button { flex: 1 1 calc(33% - 10px); padding: 12px 0; font-size: 13px; text-align: center; }
+            
+            .container { display: flex; flex-direction: column; }
+            .block-normal, .block-large { height: auto; min-height: 350px; max-height: 550px; }
+            
+            /* 强制输入框在移动端为 16px 防止 iOS 自动缩放 */
+            .input-row { flex-direction: column; }
+            .input-row input[type="text"], .input-row input[type="date"], .input-row select, .add-btn { 
+                width: 100%; flex: none; font-size: 16px; padding: 12px; margin-bottom: 5px; 
+            }
+            .form-item input, .form-item select, .form-item textarea { font-size: 16px; padding: 12px; }
+            
+            .stat-card { min-width: 100%; flex: none; }
+            .filter-wrap { flex-direction: column; align-items: stretch; }
+            .filter-wrap select { width: 100%; font-size: 16px; }
+
+            /* 表格横向滚动容器 */
+            .table-responsive-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border:1px solid #eee; border-radius:6px; }
+            .content-box { padding: 0; border: none; }
+            .content-box table { border: none; }
+            
+            #currentUserInfo { margin-bottom: 5px; font-weight: bold; }
+        }
     </style>
 </head>
 <body>
@@ -153,10 +192,12 @@
 
     <div class="user-manager hide" id="userManagerPanel">
         <h3>👥 用户管理</h3>
-        <table class="user-table">
-            <thead><tr><th>ID</th><th>姓名</th><th>角色</th><th>小组</th><th>操作</th></tr></thead>
-            <tbody id="userTableBody"></tbody>
-        </table>
+        <div class="table-responsive-wrapper">
+            <table class="user-table">
+                <thead><tr><th>ID</th><th>姓名</th><th>角色</th><th>小组</th><th>操作</th></tr></thead>
+                <tbody id="userTableBody"></tbody>
+            </table>
+        </div>
     </div>
 
     <div class="dashboard">
@@ -165,7 +206,7 @@
         
         <div class="summary-box">
             <h4>📋 全团队一级任务汇总</h4>
-            <div style="margin-top:10px;max-height:300px;overflow-y:auto;">
+            <div class="table-responsive-wrapper" style="margin-top:12px;max-height:350px;overflow-y:auto;">
                 <table>
                     <thead><tr><th>所属人</th><th>时间</th><th>任务内容</th><th>状态</th><th>备注</th></tr></thead>
                     <tbody id="level1Summary"></tbody>
@@ -173,9 +214,9 @@
             </div>
         </div>
 
-        <div class="summary-box" style="margin-top: 20px;">
+        <div class="summary-box" style="margin-top: 25px;">
             <h4>📋 全团队二级任务汇总</h4>
-            <div style="margin-top:10px;max-height:300px;overflow-y:auto;">
+            <div class="table-responsive-wrapper" style="margin-top:12px;max-height:350px;overflow-y:auto;">
                 <table>
                     <thead><tr><th>所属人</th><th>归属一级任务</th><th>时间</th><th>任务内容</th><th>状态</th><th>备注</th></tr></thead>
                     <tbody id="level2Summary"></tbody>
@@ -184,15 +225,15 @@
         </div>
 
         <div class="filter-wrap hide" id="filterWrap">
-            <label>查看成员：</label>
-            <select id="viewUserSelect" onchange="switchView()"></select>
-            <label>任务状态筛选：</label>
-            <select id="statusFilter" onchange="filterTask()">
-                <option value="all">全部状态</option>
-                <option value="进行中">进行中</option>
-                <option value="已完成">已完成</option>
-                <option value="延期">延期</option>
-            </select>
+            <div style="flex:1;"><label>查看成员：</label><select id="viewUserSelect" onchange="switchView()"></select></div>
+            <div style="flex:1;"><label>任务状态筛选：</label>
+                <select id="statusFilter" onchange="filterTask()">
+                    <option value="all">全部状态</option>
+                    <option value="进行中">进行中</option>
+                    <option value="已完成">已完成</option>
+                    <option value="延期">延期</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -212,7 +253,7 @@
                 <div class="content-box" id="list2"></div>
                 <div class="input-row hide" id="input2">
                     <input type="date" id="date2">
-                    <select id="parent2" style="flex:1;min-width:120px;"></select>
+                    <select id="parent2"></select>
                     <input type="text" placeholder="任务内容" id="task2">
                     <button class="add-btn" onclick="addTask(2)">添加</button>
                 </div>
@@ -222,7 +263,7 @@
                 <div class="content-box" id="list3"></div>
                 <div class="input-row hide" id="input3">
                     <input type="date" id="date3">
-                    <select id="parent3" style="flex:1;min-width:120px;"></select>
+                    <select id="parent3"></select>
                     <input type="text" placeholder="任务内容" id="task3">
                     <button class="add-btn" onclick="addTask(3)">添加</button>
                 </div>
@@ -232,7 +273,7 @@
         <div class="right-panel">
             <div class="block-normal">
                 <div class="section-title">一级时间节点表</div>
-                <div class="content-box">
+                <div class="content-box table-responsive-wrapper">
                     <table>
                         <thead><tr><th>时间</th><th>内容</th><th>状态</th><th>备注</th><th>操作</th></tr></thead>
                         <tbody id="table1"></tbody>
@@ -241,7 +282,7 @@
             </div>
             <div class="block-normal">
                 <div class="section-title">二级时间节点表</div>
-                <div class="content-box">
+                <div class="content-box table-responsive-wrapper">
                     <table>
                         <thead><tr><th>归属一级</th><th>时间</th><th>内容</th><th>状态</th><th>备注</th><th>操作</th></tr></thead>
                         <tbody id="table2"></tbody>
@@ -250,7 +291,7 @@
             </div>
             <div class="block-large">
                 <div class="section-title">周任务表</div>
-                <div class="content-box">
+                <div class="content-box table-responsive-wrapper">
                     <table>
                         <thead><tr><th>归属一级</th><th>时间</th><th>内容</th><th>状态</th><th>备注</th><th>操作</th></tr></thead>
                         <tbody id="table3"></tbody>
@@ -262,9 +303,9 @@
 </div>
 
 <div class="modal" id="loginModal">
-    <div class="modal-content" style="width: 420px;">
-        <span class="close-modal" onclick="closeModal('loginModal')">×</span>
-        <h2 style="text-align:center;color:#2b7cc7;margin-bottom:15px;">用户登录</h2>
+    <div class="modal-content">
+        <button class="close-modal" onclick="closeModal('loginModal')">×</button>
+        <h2 style="text-align:center;color:#2b7cc7;margin-bottom:20px;">用户登录</h2>
         <div class="form-item">
             <label>选择用户</label>
             <select id="userSelect"></select>
@@ -279,8 +320,8 @@
 
 <div class="modal" id="editModal">
     <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('editModal')">×</span>
-        <h3>编辑任务</h3>
+        <button class="close-modal" onclick="closeModal('editModal')">×</button>
+        <h3 style="margin-bottom:15px;color:#2b7cc7;">编辑任务</h3>
         <div class="form-item">
             <label>任务时间</label>
             <input type="date" id="editDate">
@@ -297,14 +338,14 @@
             <label>修改原因（仅修改时间必填）</label>
             <textarea id="editReason" rows="3"></textarea>
         </div>
-        <button class="login-btn" onclick="saveEdit()">保存</button>
+        <button class="login-btn" onclick="saveEdit()">保存修改</button>
     </div>
 </div>
 
 <div class="modal" id="addUserModal">
     <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('addUserModal')">×</span>
-        <h3>添加用户</h3>
+        <button class="close-modal" onclick="closeModal('addUserModal')">×</button>
+        <h3 style="margin-bottom:15px;color:#2b7cc7;">添加用户</h3>
         <div class="form-item">
             <label>姓名</label>
             <input type="text" id="newUserName">
@@ -319,14 +360,14 @@
                 <input type="text" id="newUserGroup">
             </div>
         </div>
-        <button class="login-btn" onclick="saveNewUser()">保存</button>
+        <button class="login-btn" onclick="saveNewUser()">保存并添加</button>
     </div>
 </div>
 
 <div class="modal" id="editUserModal">
     <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('editUserModal')">×</span>
-        <h3>编辑用户</h3>
+        <button class="close-modal" onclick="closeModal('editUserModal')">×</button>
+        <h3 style="margin-bottom:15px;color:#2b7cc7;">编辑用户</h3>
         <input type="hidden" id="editUserId">
         <div class="form-item">
             <label>姓名</label>
@@ -342,14 +383,14 @@
                 <input type="text" id="editUserGroup">
             </div>
         </div>
-        <button class="login-btn" onclick="saveEditUser()">保存</button>
+        <button class="login-btn" onclick="saveEditUser()">保存修改</button>
     </div>
 </div>
 
 <div class="modal" id="editPwdModal">
     <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('editPwdModal')">×</span>
-        <h3>修改密码</h3>
+        <button class="close-modal" onclick="closeModal('editPwdModal')">×</button>
+        <h3 style="margin-bottom:15px;color:#2b7cc7;">修改密码</h3>
         <div class="form-item">
             <label>原密码</label>
             <input type="password" id="oldPwd">
@@ -362,23 +403,23 @@
             <label>确认新密码</label>
             <input type="password" id="confirmPwd">
         </div>
-        <button class="login-btn" onclick="saveMyPwd()">保存</button>
+        <button class="login-btn" onclick="saveMyPwd()">确认修改</button>
     </div>
 </div>
 
 <div class="modal" id="resetPwdModal">
     <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('resetPwdModal')">×</span>
-        <h3>重置密码</h3>
+        <button class="close-modal" onclick="closeModal('resetPwdModal')">×</button>
+        <h3 style="margin-bottom:15px;color:#e53e3e;">重置密码</h3>
         <div class="form-item">
-            <label>选择用户</label>
+            <label>选择需要重置的用户</label>
             <select id="resetUserSelect"></select>
         </div>
         <div class="form-item">
             <label>新密码</label>
             <input type="password" id="resetNewPwd" value="8888">
         </div>
-        <button class="login-btn" onclick="doResetPwd()">确认重置</button>
+        <button class="login-btn" style="background:#e53e3e;" onclick="doResetPwd()">强制重置</button>
     </div>
 </div>
 
@@ -392,6 +433,18 @@ let globalTaskData = {};
 
 const roleLevel = { cto:4, hw_manager:3, sw_manager:3, mech_manager:3, manager:3, leader:2, member:1 };
 const roleText = { cto:"CTO", hw_manager:"硬件经理", sw_manager:"软件经理", mech_manager:"结构经理", manager:"经理", leader:"组长", member:"组员" };
+
+/* 自动获取本周五的日期（ISO星期标准） */
+function getThisFriday() {
+    const d = new Date();
+    const currentDay = d.getDay() === 0 ? 7 : d.getDay(); // 将周日映射为 7，周一为 1
+    const daysToFriday = 5 - currentDay; // 差值计算，周一+4，周六-1
+    d.setDate(d.getDate() + daysToFriday);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
 
 function closeModal(m){
     document.getElementById(m).style.display="none";
@@ -565,7 +618,7 @@ function refreshPerm(){
     document.getElementById("loginTriggerBtn").classList.toggle("hide", isLoggedIn);
     document.getElementById("logoutBtn").classList.toggle("hide", !isLoggedIn);
     document.getElementById("exportBtn").classList.toggle("hide", !isLoggedIn);
-    document.getElementById("currentUserInfo").textContent = isLoggedIn ? `当前：${currentUser.name}（${roleText[currentUser.role]}）` : "未登录（只读查看模式）";
+    document.getElementById("currentUserInfo").textContent = isLoggedIn ? `当前登录：${currentUser.name}（${roleText[currentUser.role]}）` : "未登录（仅查看模式）";
     
     document.getElementById("filterWrap").classList.toggle("hide", !isLoggedIn);
     document.getElementById("taskContainer").classList.toggle("hide", !isLoggedIn);
@@ -628,7 +681,8 @@ async function switchView(){
 
 function fillParentSelect(selId, list){
     const sel = document.getElementById(selId);
-    sel.innerHTML = '<option value="">— 请选择一级任务 —</option>';
+    sel.innerHTML = '<option value="">— 可选一级任务 —</option>';
+    if(selId === "parent2"){ sel.innerHTML = '<option value="">— 必选一级任务 —</option>'; }
     list.forEach(item=>{
         const opt = document.createElement("option");
         opt.value = item.content;
@@ -725,7 +779,7 @@ function render(t,list){
                 </select>
             </td>
             <td data-show="${item.remark??''}">
-                <input ${!canEdit?"disabled":""} value="${item.remark??''}" onchange="setRemark(${t},${item._origIdx},this.value)">
+                <input ${!canEdit?"disabled":""} value="${item.remark??''}" onchange="setRemark(${t},${item._origIdx},this.value)" placeholder="添加备注">
             </td>
             <td>${canEdit?`<span class="del-btn" onclick="delTask(${t},${item._origIdx})">删除</span>`:""}</td>`;
         te.appendChild(tr);
@@ -793,8 +847,16 @@ async function addTask(t){
         d[k].push(JSON.parse(JSON.stringify(item)));
         await post("/task/save",{uid,data:d});
     }
-    document.getElementById("date"+t).value="";
-    document.getElementById("task"+t).value="";
+    
+    /* 每次添加完毕后重置输入框，若为周任务则重置回默认周五 */
+    if (t === 3) {
+        document.getElementById("date3").value = getThisFriday();
+        document.getElementById("task3").value = "";
+    } else {
+        document.getElementById("date"+t).value = "";
+        document.getElementById("task"+t).value = "";
+    }
+    
     await refreshStat(); await refreshTask();
 }
 
@@ -842,12 +904,18 @@ async function setRemark(t,i,v){
     await refreshStat(); await refreshTask();
 }
 
+/* ================= 升级核心：全新的部门组别映射与排序 ================= */
 function getGroupType(groupName) {
     if (groupName.includes("硬件")) return 1;
     if (groupName.includes("软件")) return 2;
     if (groupName.includes("结构")) return 3;
-    return 99;
+    if (groupName.includes("电气")) return 4;
+    if (groupName.includes("DVT")) return 5;
+    if (groupName.includes("试制")) return 6;
+    if (groupName.includes("下线")) return 7;
+    return 99; // 未知匹配则放最后
 }
+
 function extractGroupNumber(groupName) {
     const match = groupName.match(/[一二三四五六七八九十\d]+/);
     if (!match) return 999;
@@ -891,12 +959,15 @@ async function refreshStat(){
         if(!groupMap[u.group])groupMap[u.group]=[];
         groupMap[u.group].push(u);
     });
+    
+    /* 采用全新的组别主排序 + 数字编号副排序 */
     const sortedGroups = Object.keys(groupMap).sort((a, b) => {
         const ta = getGroupType(a); const tb = getGroupType(b);
         if (ta !== tb) return ta - tb;
         const na = extractGroupNumber(a); const nb = extractGroupNumber(b);
         return na - nb;
     });
+    
     sortedGroups.forEach(g=>{
         if(currentUser && currentUser.role === "hw_manager" && !g.includes("硬件")) return;
         if(currentUser && currentUser.role === "sw_manager" && !g.includes("软件")) return;
@@ -1175,6 +1246,8 @@ $(function(){
 });
 
 window.onload = async () => {
+    // 首次进入系统即自动写入周任务默认值（本周五）
+    document.getElementById("date3").value = getThisFriday();
     await loadUsers();  
     refreshPerm();      
     refreshStat();      
