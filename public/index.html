@@ -929,8 +929,8 @@ async function refreshStat(){
         if(!final[key] || curr < (roleLevel[final[key].user.role] || 0)){ final[key] = it; }
     });
 
-    // 优化1：全团队一级任务按时间由近到远进行倒序排列（最新排最前）
-    const sortedL1Items = Object.values(final).sort((a, b) => new Date(b.date) - new Date(a.date));
+    // 调整：全团队一级任务按时间由远到近进行升序/正序排列（最早的时间排在最前面）
+    const sortedL1Items = Object.values(final).sort((a, b) => new Date(a.date) - new Date(b.date));
 
     sortedL1Items.forEach(it=>{
         const tr = document.createElement("tr");
@@ -944,7 +944,7 @@ async function refreshStat(){
         sumBody.appendChild(tr);
     });
 
-    // ================= 优化2：全团队二级任务汇总 =================
+    // ================= 全团队二级任务汇总 =================
     const sumBodyL2 = document.getElementById("level2Summary");
     if (sumBodyL2) {
         sumBodyL2.innerHTML = "";
@@ -984,17 +984,17 @@ async function refreshStat(){
             it.parentDate = l1DateMap[pTrim] || "1970-01-01"; // 找不到归属一级的扔最下边
         });
 
-        // 排序规则：归属同一一级任务的二级任务放一起；排序按一级任务时间由近及远
+        // 调整：归属同一一级任务的二级任务放一起；排序按一级任务时间由远及近，二级自身时间也按由远及近
         l2List.sort((a, b) => {
             const dateA = new Date(a.parentDate);
             const dateB = new Date(b.parentDate);
-            if (dateB - dateA !== 0) return dateB - dateA; // 一级时间近到远降序
+            if (dateA - dateB !== 0) return dateA - dateB; // 一级时间远到近正序
             
             const pA = a.parent || "";
             const pB = b.parent || "";
             if (pA !== pB) return pA.localeCompare(pB, 'zh'); // 按父任务文本分组聚合
             
-            return new Date(b.date) - new Date(a.date); // 同父任务内，二级自身时间倒序
+            return new Date(a.date) - new Date(b.date); // 同父任务内，二级自身时间正序
         });
 
         l2List.forEach(it=>{
@@ -1050,13 +1050,11 @@ function exportExcel(){
     XLSX.writeFile(wb,"团队任务数据.xlsx");
 }
 
-// 优化3：组长创建组员时，小组锁定为组长自身所在组
 document.getElementById("addUserBtn").onclick=()=>{
     document.getElementById("newUserName").value="";
     
     const container = document.getElementById("newUserGroupContainer");
     if(currentUser && currentUser.role === "leader"){
-        // 支持组长同时拥有多个组，用常见分隔符切分
         const groups = currentUser.group ? currentUser.group.split(/[,，、/|;；\s]+/).filter(Boolean) : ["默认组"];
         if(groups.length > 1){
             let selHtml = '<select id="newUserGroup">';
@@ -1095,7 +1093,6 @@ async function saveNewUser(){
     if(res.ok){ closeModal("addUserModal"); await loadUsers(); refreshAll(); alert("添加成功"); } else alert(res.msg);
 }
 
-// 优化3：组长编辑组员时，小组锁定在组长范围内
 function openEditUser(id){
     const u=userList.find(x=>x.id==id);if(!u)return;
     document.getElementById("editUserId").value=u.id;
