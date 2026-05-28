@@ -36,40 +36,33 @@ async function initDB() {
 async function readData() {
     await initDB();
     if (!dataCollection) {
-        // 如果未配置数据库，返回默认结构保障程序不崩溃
         return {
             users: [{ id: 1, name: "管理员", role: "cto", group: "管理组", pwd: "ODg4OA==" }],
             tasks: { "1": { l1: [], l2: [], week: [] } }
         };
     }
-    
-    let doc = await dataCollection.findOne({ _id: 'global_data' });
+    const doc = await dataCollection.findOne({ type: 'global_data' });
     if (!doc) {
-        // 如果数据库是空的，初始化默认管理员账号
-        doc = {
-            _id: 'global_data',
-            users: [
-                { id: 1, name: "管理员", role: "cto", group: "管理组", pwd: "ODg4OA==" }
-            ],
-            tasks: {
-                "1": { l1: [], l2: [], week: [] }
-            }
+        const defaultData = {
+            type: 'global_data',
+            users: [{ id: 1, name: "管理员", role: "cto", group: "管理组", pwd: "ODg4OA==" }],
+            tasks: { "1": { l1: [], l2: [], week: [] } }
         };
-        await dataCollection.insertOne(doc);
+        await dataCollection.insertOne(defaultData);
+        return defaultData;
     }
     return doc;
 }
 
-// 将更新后的数据保存回数据库
+// 将数据安全写入云数据库
 async function writeData(data) {
     await initDB();
-    if (dataCollection) {
-        await dataCollection.updateOne(
-            { _id: 'global_data' },
-            { $set: { users: data.users, tasks: data.tasks } },
-            { upsert: true }
-        );
-    }
+    if (!dataCollection) return;
+    await dataCollection.updateOne(
+        { type: 'global_data' },
+        { $set: { users: data.users, tasks: data.tasks } },
+        { upsert: true }
+    );
 }
 
 /* ==================== API 接口路由 ==================== */
@@ -80,7 +73,7 @@ app.get('/api/users', async (req, res) => {
         const data = await readData();
         res.json(data.users);
     } catch (err) {
-        res.status(500).json({ ok: false, msg: "读取数据失败" });
+        res.status(500).json({ ok: false, msg: "获取用户列表失败" });
     }
 });
 
@@ -89,15 +82,64 @@ app.post('/api/login', (req, res) => {
     res.json({ ok: true });
 });
 
-// 3. 获取特定用户的任务数据
+// 3. 获取特定用户的任务数据（**已在此处完美集成多级联动排序逻辑**）
 app.get('/api/task/:uid', async (req, res) => {
     try {
         const uid = req.params.uid;
         const data = await readData();
         const userTasks = data.tasks[uid] || { l1: [], l2: [], week: [] };
+
+        // ==================== 核心排序逻辑开始 ====================
+        
+        // 1. 一级任务汇总排序：按完成时间（时间列）最早的排在最上面（升序）
+        if (userTasks.l1 && Array.isArray(userTasks.l1)) {
+            userTasks.l1.sort((a, b) => {
+                // 自动兼容 time 或 date 字段
+                const timeA = new Date(a.time || a.date || 0).getTime();
+                const timeB = new Date(b.time || b.date || 0).getTime();
+                return timeA - timeB; // 最早的排在最上面
+            });
+        }
+
+        // 2. 二级任务汇总排序
+        if (userTasks.l2 && Array.isArray(userTasks.l2)) {
+            // 首先建立一个“一级任务标识(id或name)”到“一级任务时间”的映射表，提高匹配效率
+            const l1TimeMap = {};
+            if (userTasks.l1 && Array.isArray(userTasks.l1)) {
+                userTasks.l1.forEach(item => {
+                    const key = item.id || item.name;
+                    if (key) {
+                        l1TimeMap[key] = new Date(item.time || item.date || 0).getTime();
+                    }
+                });
+            }
+
+            userTasks.l2.sort((a, b) => {
+                // 获取二级任务所关联的一级任务标识（自动兼容各类常见命名：parentId, l1Id, pId, l1Name, parent）
+                const aParentKey = a.parentId || a.l1Id || a.pId || a.l1Name || a.parent;
+                const bParentKey = b.parentId || b.l1Id || b.pId || b.l1Name || b.parent;
+
+                const aL1Time = l1TimeMap[aParentKey] || 0;
+                const bL1Time = l1TimeMap[bParentKey] || 0;
+
+                // 【规则一】：先按所属的“一级任务完成时间”最早的排在最上面
+                if (aL1Time !== bL1Time) {
+                    return aL1Time - bL1Time;
+                }
+
+                // 【规则二】：如果属于同一个一级任务（时间相同），则按“二级任务自身时间”最早的排在最上面
+                const aTime = new Date(a.time || a.date || 0).getTime();
+                const bTime = new Date(b.time || b.date || 0).getTime();
+                return aTime - bTime;
+            });
+        }
+
+        // ==================== 核心排序逻辑结束 ====================
+
         res.json(userTasks);
     } catch (err) {
-        res.status(500).json({ ok: false, msg: "读取任务失败" });
+        console.error("获取任务失败:", err);
+        res.status(500).json({ ok: false, msg: "获取任务失败" });
     }
 });
 
@@ -192,7 +234,7 @@ app.post('/api/user/update-pwd', async (req, res) => {
         
         res.json({ ok: true });
     } catch (err) {
-        res.status(500).json({ ok: false, msg: "修改密码失败" });
+        res.status(500).json({ ok: false, msg: "更新密码失败" });
     }
 });
 
