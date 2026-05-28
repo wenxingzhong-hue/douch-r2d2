@@ -46,12 +46,15 @@
         .filter-wrap select{padding:8px;border-radius:6px;border:1px solid #ddd; font-size: 14px;}
 
         .dashboard{background:#fff;padding:20px;border-radius:10px;margin-bottom:20px; box-shadow:0 2px 8px #00000008;}
-        .dashboard h3{color:#2b7cc7;margin-bottom:16px;}
-        .group-title{font-size:16px;font-weight:bold;color:#2b7cc7;margin:16px 0 10px;}
-        .group-row{display:flex;gap:15px;flex-wrap:wrap;margin-bottom:15px;}
-        .stat-card{border:1px solid #eee;padding:16px;border-radius:8px;min-width:240px;background:#fafbfc;flex:1;}
-        .stat-card h4{margin-bottom:10px;color:#333;font-size:16px;}
-        .stat-row{display:flex;justify-content:space-between;margin:6px 0;font-size:14px;}
+        .dashboard h3{color:#2b7cc7;margin-bottom:12px;}
+        
+        /* 优化统计区：使得尺寸更紧凑 */
+        .group-title{font-size:15px;font-weight:bold;color:#2b7cc7;margin:12px 0 8px;}
+        .group-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+        .stat-card{border:1px solid #eee;padding:10px 14px;border-radius:6px;min-width:170px;background:#fafbfc;flex:1;box-shadow:0 1px 3px #00000008;}
+        .stat-card h4{margin-bottom:6px;color:#333;font-size:14px;border-bottom:1px solid #eee;padding-bottom:5px;}
+        .stat-row{display:flex;justify-content:space-between;margin:4px 0;font-size:13px;color:#555;}
+        
         .summary-box{margin-top:25px;padding-top:20px;border-top:1px dashed #ddd;}
 
         .container{
@@ -123,7 +126,7 @@
         th{background:#f7fafc;font-weight:bold;}
         td.overdue{color:#f56c6c;font-weight:bold;}
         
-        td select, td input { padding:6px; border:1px solid #ddd; border-radius:4px; font-size:13px; width: 100%; }
+        td select, td input { padding:6px; border:1px solid #ddd; border-radius:4px; font-size:13px; width: 100%; background: rgba(255,255,255,0.8); }
         .locked:disabled{background:#f1f1f1;cursor:not-allowed;}
 
         .modal{
@@ -159,7 +162,8 @@
             }
             .form-item input, .form-item select, .form-item textarea { font-size: 16px; padding: 12px; }
             
-            .stat-card { min-width: 100%; flex: none; }
+            /* 手机端进一步优化人员统计卡片，一行两列排列更紧凑 */
+            .stat-card { min-width: calc(50% - 6px); flex: 1 1 auto; padding: 10px; }
             .filter-wrap { flex-direction: column; align-items: stretch; }
             .filter-wrap select { width: 100%; font-size: 16px; }
 
@@ -169,6 +173,11 @@
             .content-box table { border: none; }
             
             #currentUserInfo { margin-bottom: 5px; font-weight: bold; }
+        }
+        
+        /* 针对极小屏幕手机兜底 */
+        @media screen and (max-width: 400px) {
+            .stat-card { min-width: 100%; }
         }
     </style>
 </head>
@@ -848,7 +857,6 @@ async function addTask(t){
         await post("/task/save",{uid,data:d});
     }
     
-    /* 每次添加完毕后重置输入框，若为周任务则重置回默认周五 */
     if (t === 3) {
         document.getElementById("date3").value = getThisFriday();
         document.getElementById("task3").value = "";
@@ -904,7 +912,6 @@ async function setRemark(t,i,v){
     await refreshStat(); await refreshTask();
 }
 
-/* ================= 升级核心：全新的部门组别映射与排序 ================= */
 function getGroupType(groupName) {
     if (groupName.includes("硬件")) return 1;
     if (groupName.includes("软件")) return 2;
@@ -913,7 +920,7 @@ function getGroupType(groupName) {
     if (groupName.includes("DVT")) return 5;
     if (groupName.includes("试制")) return 6;
     if (groupName.includes("下线")) return 7;
-    return 99; // 未知匹配则放最后
+    return 99; 
 }
 
 function extractGroupNumber(groupName) {
@@ -960,7 +967,6 @@ async function refreshStat(){
         groupMap[u.group].push(u);
     });
     
-    /* 采用全新的组别主排序 + 数字编号副排序 */
     const sortedGroups = Object.keys(groupMap).sort((a, b) => {
         const ta = getGroupType(a); const tb = getGroupType(b);
         if (ta !== tb) return ta - tb;
@@ -1020,7 +1026,7 @@ async function refreshStat(){
         sumBody.appendChild(tr);
     });
 
-    // ================= 全团队二级任务汇总 =================
+    // ================= 全团队二级任务汇总（新增彩色斑马纹） =================
     const sumBodyL2 = document.getElementById("level2Summary");
     if (sumBodyL2) {
         sumBodyL2.innerHTML = "";
@@ -1070,8 +1076,21 @@ async function refreshStat(){
             return new Date(a.date) - new Date(b.date); 
         });
 
+        // 定义一套清新的柔和色彩，用于区分不同的归属一级任务
+        const bgColors = ['#ffffff', '#f4f9ff', '#f5faf0', '#fffbf2', '#fdf6f0', '#fef3f3', '#f6f3fc', '#f2fbf9'];
+        const pColorMap = {};
+        let colorIdx = 0;
+
         l2List.forEach(it=>{
+            const pKey = it.parent || "未分类";
+            if(typeof pColorMap[pKey] === 'undefined'){
+                pColorMap[pKey] = bgColors[colorIdx % bgColors.length];
+                colorIdx++;
+            }
+            
             const tr = document.createElement("tr");
+            tr.style.backgroundColor = pColorMap[pKey]; // 动态赋予斑马纹色彩
+            
             const dc = isOverdue(it.date,it.status)?"overdue":"";
             tr.innerHTML = `
                 <td data-show="${it.user.name}">${it.user.name}</td>
