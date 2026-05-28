@@ -478,12 +478,11 @@ function getAddSyncUserIds(operatorUid, taskType) {
 }
 
 function filterTask(){refreshTask();}
-// 统一职级高低及拼音首字排序工具函数
 function compareUserByRoleAndName(a, b) {
     const lvlA = roleLevel[a.role] || 0;
     const lvlB = roleLevel[b.role] || 0;
-    if (lvlB !== lvlA) return lvlB - lvlA; // 职级高的排前面（往左/往上）
-    return a.name.localeCompare(b.name, 'zh'); // 同职级按中文拼音首字母 A-Z 排序
+    if (lvlB !== lvlA) return lvlB - lvlA; 
+    return a.name.localeCompare(b.name, 'zh'); 
 }
 
 function isOverdue(dateStr, status){
@@ -496,12 +495,9 @@ function sortByDate(arr){
     return arr.sort((a,b)=> new Date(a.date) - new Date(b.date));
 }
 
-// 加载并初始化全局用户缓存（优化：直接在此处将全局下拉菜单按职级拼音排序）
 async function loadUsers(){
     userList = await get("/users");
     if(!Array.isArray(userList)) userList = [];
-    
-    // 【优化点二】登录下拉菜单，统一按职级权重高低、姓名拼音首字排序
     userList.sort(compareUserByRoleAndName);
 
     const s = document.getElementById("userSelect");
@@ -543,7 +539,7 @@ async function refreshAll(){
     refreshUserSelect();
     refreshPerm();
     refreshUserTable();
-    refreshStat();
+    await refreshStat(); // 确保看板和全局缓存加载完毕
     await refreshTask();
 }
 
@@ -626,6 +622,27 @@ function fillParentSelect(selId, list){
     });
 }
 
+// 优化点1：提取全团队去重后的一级任务列表
+function getAllTeamLevel1Tasks() {
+    const allL1 = [];
+    const seen = new Set();
+    for (const uid in globalTaskData) {
+        const d = globalTaskData[uid];
+        if (d && d.l1) {
+            d.l1.forEach(item => {
+                if (item && item.content) {
+                    const contentTrimmed = item.content.trim();
+                    if (!seen.has(contentTrimmed)) {
+                        seen.add(contentTrimmed);
+                        allL1.push(item);
+                    }
+                }
+            });
+        }
+    }
+    return sortByDate(allL1);
+}
+
 async function refreshTask(){
     if(!viewUid) return;
     const tu = userList.find(u=>u.id==viewUid);
@@ -641,8 +658,12 @@ async function refreshTask(){
         l2 = l2.filter(x=>x.status===f);
         l3 = l3.filter(x=>x.status===f);
     }
-    fillParentSelect("parent2", l1);
-    fillParentSelect("parent3", l1);
+    
+    // 优化：将可选的一级任务范围扩大到全团队
+    const allTeamL1 = getAllTeamLevel1Tasks();
+    fillParentSelect("parent2", allTeamL1);
+    fillParentSelect("parent3", allTeamL1);
+    
     render(1,l1); render(2,l2); render(3,l3);
 }
 
@@ -706,7 +727,8 @@ function openEdit(t, i){
         const es = document.getElementById("editParent");
         if(t===1){ pb.style.display="none"; }else{
             pb.style.display="block";
-            fillParentSelect("editParent", d.l1||[]);
+            // 优化：编辑时也全面使用全团队的一级任务数据
+            fillParentSelect("editParent", getAllTeamLevel1Tasks());
             es.value = item.parent||"";
         }
         document.getElementById("editModal").style.display="flex";
@@ -733,7 +755,7 @@ async function saveEdit(){
         tar.history.push(log);
     }
     await post("/task/save",{uid:viewUid,data:d});
-    closeModal("editModal"); await refreshTask(); refreshStat();
+    closeModal("editModal"); await refreshStat(); await refreshTask();
 }
 
 async function addTask(t){
@@ -741,7 +763,9 @@ async function addTask(t){
     const content = document.getElementById("task"+t).value.trim();
     const parent = (t===2||t===3) ? document.getElementById("parent"+t).value : "";
     if(!date||!content){alert("请填写完整");return;}
-    if((t===2||t===3)&&!parent){alert("请选择归属一级任务");return;}
+    
+    // 优化点2：二级节点(t===2)时一级任务必须选择，周任务(t===3)不再拦截，允许为空
+    if(t===2 && !parent){alert("请选择归属一级任务");return;}
     
     const taskId = Date.now() + "_" + Math.random().toString(36).substring(2, 9);
     const item = {id: taskId, date, content, status:"进行中", remark:"", history:[], parent};
@@ -755,7 +779,7 @@ async function addTask(t){
     }
     document.getElementById("date"+t).value="";
     document.getElementById("task"+t).value="";
-    await refreshTask(); refreshStat();
+    await refreshStat(); await refreshTask();
 }
 
 async function delTask(t, index){
@@ -783,7 +807,7 @@ async function delTask(t, index){
         }
         if(isChanged){ await post("/task/save", { uid: user.id, data: userData }); }
     }
-    await refreshTask(); refreshStat();
+    await refreshStat(); await refreshTask();
 }
 
 async function setStatus(t,i,v){
@@ -791,7 +815,7 @@ async function setStatus(t,i,v){
     const k = t===1?"l1":t===2?"l2":"week";
     d[k][i].status = v;
     await post("/task/save",{uid:viewUid,data:d});
-    await refreshTask(); refreshStat();
+    await refreshStat(); await refreshTask();
 }
 
 async function setRemark(t,i,v){
@@ -799,7 +823,7 @@ async function setRemark(t,i,v){
     const k = t===1?"l1":t===2?"l2":"week";
     d[k][i].remark = v;
     await post("/task/save",{uid:viewUid,data:d});
-    await refreshTask(); refreshStat();
+    await refreshStat(); await refreshTask();
 }
 
 function getGroupType(groupName) {
@@ -816,12 +840,12 @@ function extractGroupNumber(groupName) {
     return numberMap[numStr] ?? parseInt(numStr, 10) ?? 999;
 }
 
-// 统计看板刷新（优化：【优化点一】职级高的往左边/前面排列）
 async function refreshStat(){
     const map = {};
     const reqs = userList.map(async (u) => {
         if(!currentUser || u.role !== "cto" || currentUser.role === "cto"){
             map[u.id] = await get(`/task/${u.id}`);
+            globalTaskData[u.id] = map[u.id]; // 优化：将所有团队数据在此处同步至全局缓存中
         }
     });
     await Promise.all(reqs);
@@ -829,10 +853,9 @@ async function refreshStat(){
     const box = document.getElementById("statContainer");
     box.innerHTML = "";
 
-    // 1. 渲染管理层（引入按职级和拼音排序）
     const adminUsers = userList.filter(u=>["cto","hw_manager","sw_manager","mech_manager","manager"].includes(u.role));
     if(adminUsers.length){
-        adminUsers.sort(compareUserByRoleAndName); // 职级高优先往左排序
+        adminUsers.sort(compareUserByRoleAndName); 
 
         const tit = document.createElement("div");
         tit.className="group-title"; tit.innerText="管理层（CTO/各模块经理）";
@@ -846,7 +869,6 @@ async function refreshStat(){
         box.appendChild(r);
     }
 
-    // 2. 渲染各小组成员（组长自动排到组员的左边）
     const groupMap = {};
     userList.forEach(u=>{
         if(["cto","hw_manager","sw_manager","mech_manager","manager"].includes(u.role))return;
@@ -869,14 +891,11 @@ async function refreshStat(){
         box.appendChild(t);
         const r = document.createElement("div"); r.className="group-row";
         
-        // 【核心修改】将本小组内成员按照职级（组长权重2 > 组员权重1）进行由左至右降序排列
         groupMap[g].sort(compareUserByRoleAndName);
-        
         groupMap[g].forEach(u=>r.appendChild(createStatCard(u,map[u.id])));
         box.appendChild(r);
     });
 
-    // 3. 全团队一级任务汇总列表渲染
     const sumBody = document.getElementById("level1Summary");
     sumBody.innerHTML = "";
     const items = [];
@@ -1022,7 +1041,6 @@ async function doResetPwd(){
     closeModal("resetPwdModal");alert("重置成功");
 }
 
-// 悬浮提示
 $(function(){
     $(document).on("mouseenter","[data-show]",function(e){
         $(".easy-tooltip").html($(this).attr("data-show")).stop().fadeIn(100);
@@ -1033,11 +1051,10 @@ $(function(){
     });
 });
 
-// 【生命周期挂载】
 window.onload = async () => {
-    await loadUsers();  // 拉取用户列表缓存并强制执行职级拼音排序
-    refreshPerm();      // 渲染初始大屏查看权限
-    refreshStat();      // 看板首屏对齐排序数据并呈递
+    await loadUsers();  
+    refreshPerm();      
+    refreshStat();      
 };
 </script>
 </body>
