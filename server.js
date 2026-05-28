@@ -32,7 +32,7 @@ async function initDB() {
     }
 }
 
-// 从数据库读取整网数据
+// 【高级兼容】从数据库读取整网数据（自动识别并找回老数据）
 async function readData() {
     await initDB();
     if (!dataCollection) {
@@ -41,8 +41,12 @@ async function readData() {
             tasks: { "1": { l1: [], l2: [], week: [] } }
         };
     }
-    const doc = await dataCollection.findOne({ type: 'global_data' });
-    if (!doc) {
+
+    // 获取集合中的所有文档进行智能辨别
+    const docs = await dataCollection.find({}).toArray();
+    
+    if (docs.length === 0) {
+        // 如果集合完全为空，则初始化默认数据
         const defaultData = {
             type: 'global_data',
             users: [{ id: 1, name: "管理员", role: "cto", group: "管理组", pwd: "ODg4OA==" }],
@@ -51,18 +55,64 @@ async function readData() {
         await dataCollection.insertOne(defaultData);
         return defaultData;
     }
-    return doc;
+
+    // 【核心找回逻辑】优先寻找包含多个用户或多组任务的历史真正文档
+    let realDoc = docs.find(d => d.users && d.users.length > 1);
+    if (!realDoc) {
+        realDoc = docs.find(d => d.tasks && Object.keys(d.tasks).length > 1);
+    }
+    if (!realDoc) {
+        // 排除掉上一版代码误创建的 type 为 'global_data' 且只有1个用户的空白文档
+        realDoc = docs.find(d => d.type !== 'global_data');
+    }
+    if (!realDoc) {
+        // 兜底选择第一个文档
+        realDoc = docs[0];
+    }
+
+    return realDoc;
 }
 
-// 将数据安全写入云数据库
+// 【精准持久化】将数据安全写入云数据库
 async function writeData(data) {
     await initDB();
     if (!dataCollection) return;
-    await dataCollection.updateOne(
-        { type: 'global_data' },
-        { $set: { users: data.users, tasks: data.tasks } },
-        { upsert: true }
-    );
+    
+    if (data._id) {
+        // 如果包含数据库内部 _id，说明是读取出来的历史有效文档，进行精准覆盖更新
+        const { _id, ...updateFields } = data;
+        await dataCollection.updateOne({ _id: _id }, { $set: updateFields });
+    } else {
+        // 兜底方案
+        await dataCollection.updateOne(
+            { type: 'global_data' },
+            { $set: { users: data.users, tasks: data.tasks } },
+            { upsert: true }
+        );
+    }
+}
+
+/* ==================== 排序辅助工具函数（超强容错） ==================== */
+
+// 安全提取并解析各类日期/时间字段
+function getTaskTime(task) {
+    if (!task) return 0;
+    const val = task.time || task.date || task.datetime || task.endTime || task.dateTime || 0;
+    if (!val) return 0;
+    const ts = Date.parse(val);
+    return isNaN(ts) ? 0 : ts;
+}
+
+// 安全提取一级任务标识（支持 id 或名称）
+function getL1Key(item) {
+    if (!item) return '';
+    return item.id || item.name || item.l1Name || item.title || '';
+}
+
+// 安全提取二级任务中关联一级任务的外键字段
+function getParentKey(task) {
+    if (!task) return '';
+    return task.parentId || task.l1Id || task.pId || task.l1Name || task.parent || task.l1 || '';
 }
 
 /* ==================== API 接口路由 ==================== */
@@ -82,59 +132,46 @@ app.post('/api/login', (req, res) => {
     res.json({ ok: true });
 });
 
-// 3. 获取特定用户的任务数据（**已在此处完美集成多级联动排序逻辑**）
+// 3. 获取特定用户的任务数据（完美集成多级联动排序）
 app.get('/api/task/:uid', async (req, res) => {
     try {
         const uid = req.params.uid;
         const data = await readData();
         const userTasks = data.tasks[uid] || { l1: [], l2: [], week: [] };
 
-        // ==================== 核心排序逻辑开始 ====================
-        
         // 1. 一级任务汇总排序：按完成时间（时间列）最早的排在最上面（升序）
         if (userTasks.l1 && Array.isArray(userTasks.l1)) {
-            userTasks.l1.sort((a, b) => {
-                // 自动兼容 time 或 date 字段
-                const timeA = new Date(a.time || a.date || 0).getTime();
-                const timeB = new Date(b.time || b.date || 0).getTime();
-                return timeA - timeB; // 最早的排在最上面
-            });
+            userTasks.l1.sort((a, b) => getTaskTime(a) - getTaskTime(b));
         }
 
-        // 2. 二级任务汇总排序
+        // 2. 二级任务汇总排序：先按一级任务时间升序，相同一级任务下按自身时间升序
         if (userTasks.l2 && Array.isArray(userTasks.l2)) {
-            // 首先建立一个“一级任务标识(id或name)”到“一级任务时间”的映射表，提高匹配效率
             const l1TimeMap = {};
             if (userTasks.l1 && Array.isArray(userTasks.l1)) {
                 userTasks.l1.forEach(item => {
-                    const key = item.id || item.name;
+                    const key = getL1Key(item);
                     if (key) {
-                        l1TimeMap[key] = new Date(item.time || item.date || 0).getTime();
+                        l1TimeMap[key] = getTaskTime(item);
                     }
                 });
             }
 
             userTasks.l2.sort((a, b) => {
-                // 获取二级任务所关联的一级任务标识（自动兼容各类常见命名：parentId, l1Id, pId, l1Name, parent）
-                const aParentKey = a.parentId || a.l1Id || a.pId || a.l1Name || a.parent;
-                const bParentKey = b.parentId || b.l1Id || b.pId || b.l1Name || b.parent;
+                const aParentKey = getParentKey(a);
+                const bParentKey = getParentKey(b);
 
                 const aL1Time = l1TimeMap[aParentKey] || 0;
                 const bL1Time = l1TimeMap[bParentKey] || 0;
 
-                // 【规则一】：先按所属的“一级任务完成时间”最早的排在最上面
+                // 【规则一】优先按所属的“一级任务完成时间”升序排列
                 if (aL1Time !== bL1Time) {
                     return aL1Time - bL1Time;
                 }
 
-                // 【规则二】：如果属于同一个一级任务（时间相同），则按“二级任务自身时间”最早的排在最上面
-                const aTime = new Date(a.time || a.date || 0).getTime();
-                const bTime = new Date(b.time || b.date || 0).getTime();
-                return aTime - bTime;
+                // 【规则二】若属于同一个一级任务，则按“二级任务自身完成时间”升序排列
+                return getTaskTime(a) - getTaskTime(b);
             });
         }
-
-        // ==================== 核心排序逻辑结束 ====================
 
         res.json(userTasks);
     } catch (err) {
@@ -238,7 +275,7 @@ app.post('/api/user/update-pwd', async (req, res) => {
     }
 });
 
-// 兜底路由：确保刷新页面时也能正确导向主页
+// 兜底路由
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
