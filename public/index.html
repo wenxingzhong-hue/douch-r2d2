@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>团队任务 management系统</title>
+    <title>团队任务管理系统</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -50,7 +50,7 @@
         .group-row{display:flex;gap:15px;flex-wrap:wrap;margin-bottom:15px;}
         .stat-card{border:1px solid #eee;padding:15px;border-radius:8px;min-width:220px;background:#fafbfc;}
         .stat-card h4{margin-bottom:8px;color:#333;}
-        .stat-row{display:flex;justify-content:space-between;margin:4px 0;font-size:14px;}
+        .stat-row">display:flex;justify-content:space-between;margin:4px 0;font-size:14px;}
         .summary-box{margin-top:20px;padding-top:16px;border-top:1px dashed #eee;}
 
         .container{
@@ -139,7 +139,7 @@
 
 <div id="mainPage">
     <div class="top-bar">
-        <h2>团队任务 management</h2>
+        <h2>团队任务管理系统</h2>
         <div class="btn-group">
             <span id="currentUserInfo" style="color:#666;font-size:14px;margin-right:10px;"></span>
             <button class="login-trigger-btn" id="loginTriggerBtn" onclick="openLoginModal()">登录系统</button>
@@ -224,7 +224,7 @@
                     <input type="date" id="date3">
                     <select id="parent3" style="flex:1;min-width:120px;"></select>
                     <input type="text" placeholder="任务内容" id="task3">
-                    <button class="add-btn" onclick="addTask(2)">添加</button>
+                    <button class="add-btn" onclick="addTask(3)">添加</button>
                 </div>
             </div>
         </div>
@@ -664,7 +664,6 @@ async function refreshTask(){
     const d = await get(`/task/${viewUid}`);
     globalTaskData[viewUid] = d;
 
-    // 关键修复：在排序和过滤之前，为每一项注入它们在未排序原始数组中的真实下标映射关系
     if(d.l1) d.l1.forEach((x, idx) => x._origIdx = idx);
     if(d.l2) d.l2.forEach((x, idx) => x._origIdx = idx);
     if(d.week) d.week.forEach((x, idx) => x._origIdx = idx);
@@ -698,24 +697,22 @@ function render(t,list){
         const div = document.createElement("div");
         div.className = "task-item";
         if(isOverdue(item.date,item.status)) div.classList.add("overdue");
-        let hist = "";
+        let html = "";
         if(item.history?.length){
-            hist+='<div style="margin-top:4px;font-size:12px;color:#666;white-space:pre-wrap;word-break:break-all;max-height:120px;overflow-y:auto;">';
-            item.history.forEach((h,j)=>hist+=`[记录${j+1}] ${h}<br>`);
-            hist+='</div>';
+            html+='<div style="margin-top:4px;font-size:12px;color:#666;white-space:pre-wrap;word-break:break-all;max-height:120px;overflow-y:auto;">';
+            item.history.forEach((h,j)=>html+=`[记录${j+1}] ${h}<br>`);
+            html+='</div>';
         }
-        // 关键修复：将各个操作的传参从当前循环索引 i 改为精确的原始下标 item._origIdx
         div.innerHTML=`<div class="task-main"><div class="task-text" data-show="${ft}">${ft}</div><div class="task-op">
             ${canEdit?`<span class="edit-btn" onclick="openEdit(${t},${item._origIdx})">编辑</span>`:""}
             ${canEdit?`<span class="del-btn" onclick="delTask(${t},${item._origIdx})">删除</span>`:""}
-        </div></div>${hist}`;
+        </div></div>${html}`;
         le.appendChild(div);
         
         const tr = document.createElement("tr");
         const dc = isOverdue(item.date,item.status)?"overdue":"";
         let pcell = "";
         if(t===2||t===3) pcell=`<td data-show="${item.parent||''}">${item.parent||''}</td>`;
-        // 关键修复：状态选择、备注和删除的触发也一律改为传 item._origIdx
         tr.innerHTML = `
             ${pcell}
             <td data-show="${item.date}" class="${dc}">${item.date}</td>
@@ -914,7 +911,7 @@ async function refreshStat(){
         box.appendChild(r);
     });
 
-    // ================= 一级任务汇总 =================
+    // ================= 一级任务汇总（恢复为升序 a - b） =================
     const sumBody = document.getElementById("level1Summary");
     sumBody.innerHTML = "";
     const items = [];
@@ -937,7 +934,8 @@ async function refreshStat(){
         if(!final[key] || curr < (roleLevel[final[key].user.role] || 0)){ final[key] = it; }
     });
 
-    const sortedL1Items = Object.values(final).sort((a, b) => new Date(b.date) - new Date(a.date));
+    // 修正：恢复为升序排序，时间由远到近
+    const sortedL1Items = Object.values(final).sort((a, b) => new Date(a.date) - new Date(b.date));
 
     sortedL1Items.forEach(it=>{
         const tr = document.createElement("tr");
@@ -951,7 +949,7 @@ async function refreshStat(){
         sumBody.appendChild(tr);
     });
 
-    // ================= 优化2：全团队二级任务汇总 =================
+    // ================= 全团队二级任务汇总（恢复为升序 a - b） =================
     const sumBodyL2 = document.getElementById("level2Summary");
     if (sumBodyL2) {
         sumBodyL2.innerHTML = "";
@@ -989,16 +987,17 @@ async function refreshStat(){
             it.parentDate = l1DateMap[pTrim] || "1970-01-01"; 
         });
 
+        // 修正：恢复为升序排序，时间由远到近
         l2List.sort((a, b) => {
             const dateA = new Date(a.parentDate);
             const dateB = new Date(b.parentDate);
-            if (dateB - dateA !== 0) return dateB - dateA; 
+            if (dateA - dateB !== 0) return dateA - dateB; 
             
             const pA = a.parent || "";
             const pB = b.parent || "";
             if (pA !== pB) return pA.localeCompare(pB, 'zh'); 
             
-            return new Date(b.date) - new Date(a.date); 
+            return new Date(a.date) - new Date(b.date); 
         });
 
         l2List.forEach(it=>{
