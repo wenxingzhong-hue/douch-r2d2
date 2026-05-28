@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>团队任务管理系统</title>
+    <title>团队任务 management系统</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -224,7 +224,7 @@
                     <input type="date" id="date3">
                     <select id="parent3" style="flex:1;min-width:120px;"></select>
                     <input type="text" placeholder="任务内容" id="task3">
-                    <button class="add-btn" onclick="addTask(3)">添加</button>
+                    <button class="add-btn" onclick="addTask(2)">添加</button>
                 </div>
             </div>
         </div>
@@ -663,6 +663,12 @@ async function refreshTask(){
     if(currentUser && currentUser.role!=="cto" && tu?.role==="cto"){ render(1,[]);render(2,[]);render(3,[]); return;}
     const d = await get(`/task/${viewUid}`);
     globalTaskData[viewUid] = d;
+
+    // 关键修复：在排序和过滤之前，为每一项注入它们在未排序原始数组中的真实下标映射关系
+    if(d.l1) d.l1.forEach((x, idx) => x._origIdx = idx);
+    if(d.l2) d.l2.forEach((x, idx) => x._origIdx = idx);
+    if(d.week) d.week.forEach((x, idx) => x._origIdx = idx);
+
     const f = document.getElementById("statusFilter").value;
     let l1 = sortByDate([...d.l1||[]]);
     let l2 = sortByDate([...d.l2||[]]);
@@ -698,9 +704,10 @@ function render(t,list){
             item.history.forEach((h,j)=>hist+=`[记录${j+1}] ${h}<br>`);
             hist+='</div>';
         }
+        // 关键修复：将各个操作的传参从当前循环索引 i 改为精确的原始下标 item._origIdx
         div.innerHTML=`<div class="task-main"><div class="task-text" data-show="${ft}">${ft}</div><div class="task-op">
-            ${canEdit?`<span class="edit-btn" onclick="openEdit(${t},${i})">编辑</span>`:""}
-            ${canEdit?`<span class="del-btn" onclick="delTask(${t},${i})">删除</span>`:""}
+            ${canEdit?`<span class="edit-btn" onclick="openEdit(${t},${item._origIdx})">编辑</span>`:""}
+            ${canEdit?`<span class="del-btn" onclick="delTask(${t},${item._origIdx})">删除</span>`:""}
         </div></div>${hist}`;
         le.appendChild(div);
         
@@ -708,21 +715,22 @@ function render(t,list){
         const dc = isOverdue(item.date,item.status)?"overdue":"";
         let pcell = "";
         if(t===2||t===3) pcell=`<td data-show="${item.parent||''}">${item.parent||''}</td>`;
+        // 关键修复：状态选择、备注和删除的触发也一律改为传 item._origIdx
         tr.innerHTML = `
             ${pcell}
             <td data-show="${item.date}" class="${dc}">${item.date}</td>
             <td data-show="${item.content}">${item.content}</td>
             <td data-show="${item.status}">
-                <select ${!canEdit?"disabled":""} onchange="setStatus(${t},${i},this.value)">
+                <select ${!canEdit?"disabled":""} onchange="setStatus(${t},${item._origIdx},this.value)">
                     <option ${item.status==="进行中"?"selected":""}>进行中</option>
                     <option ${item.status==="已完成"?"selected":""}>已完成</option>
                     <option ${item.status==="延期"?"selected":""}>延期</option>
                 </select>
             </td>
             <td data-show="${item.remark??''}">
-                <input ${!canEdit?"disabled":""} value="${item.remark??''}" onchange="setRemark(${t},${i},this.value)">
+                <input ${!canEdit?"disabled":""} value="${item.remark??''}" onchange="setRemark(${t},${item._origIdx},this.value)">
             </td>
-            <td>${canEdit?`<span class="del-btn" onclick="delTask(${t},${i})">删除</span>`:""}</td>`;
+            <td>${canEdit?`<span class="del-btn" onclick="delTask(${t},${item._origIdx})">删除</span>`:""}</td>`;
         te.appendChild(tr);
     });
 }
@@ -755,10 +763,6 @@ async function saveEdit(){
     const r = document.getElementById("editReason").value.trim();
     const p = (t===2||t===3) ? document.getElementById("editParent").value : "";
     if(!nd||!nc){alert("时间和内容不能为空");return;}
-    
-    // 逻辑调整：二级任务（t===2）在编辑保存时强制要求一级任务，周任务（t===3）可选不拦截
-    if(t===2 && !p){alert("二级任务必须选择归属一级任务");return;}
-    
     if(oldDate!==nd && !r){alert("修改时间必须填写原因！");return;}
     const d = await get(`/task/${viewUid}`);
     const k = t===1?"l1":t===2?"l2":"week";
@@ -779,8 +783,6 @@ async function addTask(t){
     const content = document.getElementById("task"+t).value.trim();
     const parent = (t===2||t===3) ? document.getElementById("parent"+t).value : "";
     if(!date||!content){alert("请填写完整");return;}
-    
-    // 逻辑调整：仅当二级任务（t===2）时，才强制拦截没有一级任务的情况
     if(t===2 && !parent){alert("请选择归属一级任务");return;}
     
     const taskId = Date.now() + "_" + Math.random().toString(36).substring(2, 9);
@@ -935,7 +937,7 @@ async function refreshStat(){
         if(!final[key] || curr < (roleLevel[final[key].user.role] || 0)){ final[key] = it; }
     });
 
-    const sortedL1Items = Object.values(final).sort((a, b) => new Date(a.date) - new Date(b.date));
+    const sortedL1Items = Object.values(final).sort((a, b) => new Date(b.date) - new Date(a.date));
 
     sortedL1Items.forEach(it=>{
         const tr = document.createElement("tr");
@@ -949,7 +951,7 @@ async function refreshStat(){
         sumBody.appendChild(tr);
     });
 
-    // ================= 全团队二级任务汇总 =================
+    // ================= 优化2：全团队二级任务汇总 =================
     const sumBodyL2 = document.getElementById("level2Summary");
     if (sumBodyL2) {
         sumBodyL2.innerHTML = "";
@@ -990,13 +992,13 @@ async function refreshStat(){
         l2List.sort((a, b) => {
             const dateA = new Date(a.parentDate);
             const dateB = new Date(b.parentDate);
-            if (dateA - dateB !== 0) return dateA - dateB; 
+            if (dateB - dateA !== 0) return dateB - dateA; 
             
             const pA = a.parent || "";
             const pB = b.parent || "";
             if (pA !== pB) return pA.localeCompare(pB, 'zh'); 
             
-            return new Date(a.date) - new Date(b.date); 
+            return new Date(b.date) - new Date(a.date); 
         });
 
         l2List.forEach(it=>{
