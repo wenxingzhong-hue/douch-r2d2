@@ -3,89 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>团队任务管理系统 V3.1</title>
+    <title>团队任务管理系统 V3.2</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
-            --status-ongoing: #e2f0d9;    /* 进行中：淡绿 */
-            --status-ontime: #cddef6;     /* 按时完成：蓝色 */
-            --status-overdue-no: #fff2cc; /* 延期未完成：淡黄 */
-            --status-overdue-ok: #fce4d6; /* 延期完成：暗淡红 */
-            --status-none: #f2f2f2;       /* 未选定：灰色 */
+            --status-ongoing: #e2f0d9;    
+            --status-ontime: #cddef6;     
+            --status-overdue-no: #fff2cc; 
+            --status-overdue-ok: #fce4d6; 
+            --status-none: #f2f2f2;       
         }
         * { margin:0; padding:0; box-sizing:border-box; font-family: "Microsoft YaHei", sans-serif; }
-        body { background:#f5f7fa; padding:15px; overflow-x: hidden; }
+        body { background:#f5f7fa; padding:10px; overflow-x: hidden; }
 
-        /* 向导提示条 */
-        .wizard-tip {
-            position: fixed; top: 0; left: 0; width: 100%; background: #e6f7ff; border-bottom: 2px solid #91d5ff;
-            padding: 12px; text-align: center; font-size: 16px; font-weight: bold; color: #1890ff; z-index: 2000;
-            display: none; box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        }
-        .wizard-skip-btn { margin-left: 15px; padding: 2px 10px; background: #ff4d4f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .wizard-tip { position: fixed; top: 0; left: 0; width: 100%; background: #e6f7ff; border-bottom: 2px solid #91d5ff; padding: 10px; text-align: center; font-size: 14px; font-weight: bold; color: #1890ff; z-index: 2000; display: none; box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+        .wizard-skip-btn { margin-left: 15px; padding: 2px 10px; background: #ff4d4f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
-        .top-bar { display:flex; justify-content:space-between; align-items:center; background:#fff; padding:15px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 8px rgba(0,0,0,0.06); flex-wrap:wrap; gap:10px; margin-top: 30px;}
-        .top-bar h2 { color:#2b7cc7; font-size: 20px; }
-        .btn-group { display:flex; gap:10px; align-items: center; }
-        .btn-group button { padding:8px 12px; border:none; border-radius:6px; cursor:pointer; font-size:13px; font-weight:bold; background:#2b7cc7; color:white; }
+        .top-bar { display:flex; justify-content:space-between; align-items:center; background:#fff; padding:12px 15px; border-radius:8px; margin-bottom:12px; box-shadow:0 1px 6px rgba(0,0,0,0.06); flex-wrap:wrap; gap:10px; margin-top: 25px;}
+        .top-bar h2 { color:#2b7cc7; font-size: 18px; margin: 0;}
+        .btn-group { display:flex; gap:8px; align-items: center; }
+        .btn-group button { padding:6px 10px; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold; background:#2b7cc7; color:white; }
 
-        .filter-wrap { background:#fff; padding:12px 20px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 8px rgba(0,0,0,0.06); display:flex; align-items:center; gap:15px;}
-        .filter-wrap select { padding: 6px; border-radius: 4px; border: 1px solid #ddd; }
-
-        /* ================= 统计与汇总区 ================= */
-        .dashboard { background:#fff; padding:20px; border-radius:10px; margin-bottom:20px; box-shadow:0 2px 8px #00000008; }
-        .dashboard h3 { color:#2b7cc7; margin-bottom:16px; }
-        .group-title { font-size:16px; font-weight:bold; color:#2b7cc7; margin:16px 0 10px; }
-        .group-row { display:flex; gap:15px; flex-wrap:wrap; margin-bottom:15px; }
-        .stat-card { border:1px solid #eee; padding:16px; border-radius:8px; min-width:240px; background:#fafbfc; flex:1;}
-        .stat-card h4 { margin-bottom:10px; color:#333; font-size:16px; border-bottom:1px solid #eee; padding-bottom:5px;}
-        .stat-row { display:flex; justify-content:space-between; margin:6px 0; font-size:14px; color:#555;}
+        /* 统计与汇总区 */
+        .dashboard { background:#fff; padding:15px; border-radius:8px; margin-bottom:15px; box-shadow:0 1px 6px #00000008; }
+        .dashboard h3 { color:#2b7cc7; margin-bottom:10px; font-size: 16px;}
+        .group-title { font-size:14px; font-weight:bold; color:#2b7cc7; margin:10px 0 6px; }
+        .group-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+        .stat-card { border:1px solid #eee; padding:12px; border-radius:6px; min-width:200px; background:#fafbfc; flex:1;}
+        .stat-card h4 { margin-bottom:8px; color:#333; font-size:14px; border-bottom:1px solid #eee; padding-bottom:4px;}
+        .stat-row { display:flex; justify-content:space-between; margin:4px 0; font-size:13px; color:#555;}
         
-        .summary-box { margin-top:20px; padding-top:16px; border-top:1px dashed #eee; }
-        table { width:100%; border-collapse:collapse; background:#fff; font-size:14px; }
-        th, td { padding:10px; text-align:left; border-bottom:1px solid #eee; white-space:nowrap; }
+        .summary-box { margin-top:15px; padding-top:12px; border-top:1px dashed #eee; }
+        table { width:100%; border-collapse:collapse; background:#fff; font-size:13px; }
+        th, td { padding:8px; text-align:left; border-bottom:1px solid #eee; white-space:nowrap; }
         th { background:#f7fafc; font-weight:bold; color:#333; }
         tr.clickable-row { cursor: pointer; transition: background 0.2s; }
         tr.clickable-row:hover { background: #f0f5ff; }
         td.overdue{color:#f56c6c;font-weight:bold;}
 
-        /* ================= 核心工作区：脑图与人员名单 ================= */
-        .workspace { display: grid; grid-template-columns: 78% 20%; gap: 2%; margin-bottom: 20px; }
-        .window-box { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: column; height: 650px; }
-        .window-title { font-size: 16px; font-weight: bold; color: #2b7cc7; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px;}
+        /* 核心工作区 */
+        .workspace { display: grid; grid-template-columns: 80% 18%; gap: 2%; margin-bottom: 15px; }
+        .window-box { background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); display: flex; flex-direction: column; height: 600px; }
+        .window-title { font-size: 14px; font-weight: bold; color: #2b7cc7; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px;}
         
-        .task-split-layout { display: flex; gap: 15px; flex: 1; overflow: hidden; }
+        .task-split-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; }
         .task-tree-panel { flex: 3; overflow: auto; padding: 5px; border-right: 1px dashed #eee; }
         .task-week-panel { flex: 1; overflow: auto; padding: 5px; background: #fafbfc; border-radius: 6px; }
 
-        .action-btns button { padding: 4px 10px; margin-left: 5px; font-size: 12px; background: #52c41a; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .action-btns button { padding: 4px 8px; margin-left: 4px; font-size: 12px; background: #52c41a; color: white; border: none; border-radius: 4px; cursor: pointer; }
         .action-btns button:disabled { background: #ccc; cursor: not-allowed; }
-        .view-btns button { padding: 3px 8px; font-size: 12px; background: #fff; color: #2b7cc7; border: 1px solid #2b7cc7; border-radius: 4px; cursor: pointer;}
+        .view-btns button { padding: 2px 6px; font-size: 11px; background: #fff; color: #2b7cc7; border: 1px solid #2b7cc7; border-radius: 3px; cursor: pointer;}
         .view-btns button.active { background: #2b7cc7; color: white; }
 
-        /* ================= 树状图结构 ================= */
-        .tree-node { position: relative; margin-top: 10px; margin-left: 25px; }
-        .view-outline .tree-node::before { content: ""; position: absolute; left: -15px; top: 15px; width: 15px; height: 1px; border-top: 1px dashed #ccc; }
-        .view-outline .tree-node::after { content: ""; position: absolute; left: -15px; top: -5px; width: 1px; height: calc(100% + 15px); border-left: 1px dashed #ccc; }
-        .view-outline .tree-node:last-child::after { height: 20px; }
+        /* 树状图结构 (发散与大纲) */
+        .tree-node { position: relative; margin-top: 6px; margin-left: 20px; }
+        .view-outline .tree-node::before { content: ""; position: absolute; left: -12px; top: 12px; width: 12px; height: 1px; border-top: 1px dashed #ccc; }
+        .view-outline .tree-node::after { content: ""; position: absolute; left: -12px; top: -5px; width: 1px; height: calc(100% + 12px); border-left: 1px dashed #ccc; }
+        .view-outline .tree-node:last-child::after { height: 17px; }
         
-        .view-radial { display: flex; flex-direction: column; gap: 20px; align-items: flex-start; }
-        .view-radial > .tree-node { margin-left: 0; }
-        .view-radial .tree-node { display: flex; flex-direction: row; align-items: center; margin-top: 0; position: relative; }
-        .view-radial .tree-children { display: flex; flex-direction: column; gap: 12px; position: relative; margin-left: 30px; }
-        .view-radial .tree-children::before { content: ''; position: absolute; left: -30px; top: 50%; width: 30px; height: 2px; background: #b0c4de; }
-        .view-radial .tree-children > .tree-node::before { content: ''; position: absolute; left: -15px; top: 50%; width: 15px; height: 2px; background: #b0c4de; }
-        .view-radial .tree-children > .tree-node::after { content: ''; position: absolute; left: -15px; width: 2px; background: #b0c4de; }
-        .view-radial .tree-children > .tree-node:first-child::after { top: 50%; bottom: -12px; }
-        .view-radial .tree-children > .tree-node:last-child::after { top: -12px; bottom: 50%; }
-        .view-radial .tree-children > .tree-node:not(:first-child):not(:last-child)::after { top: -12px; bottom: -12px; }
+        .view-radial { display: flex; flex-direction: column; gap: 15px; align-items: flex-start; }
+        .view-radial > .tree-node { margin-left: 0; margin-top: 0; }
+        .view-radial .tree-node { display: flex; flex-direction: row; align-items: center; position: relative; }
+        .view-radial .tree-children { display: flex; flex-direction: column; gap: 8px; position: relative; margin-left: 20px; }
+        .view-radial .tree-children::before { content: ''; position: absolute; left: -20px; top: 50%; width: 20px; height: 2px; background: #b0c4de; }
+        .view-radial .tree-children > .tree-node::before { content: ''; position: absolute; left: -10px; top: 50%; width: 10px; height: 2px; background: #b0c4de; border:none;}
+        .view-radial .tree-children > .tree-node::after { content: ''; position: absolute; left: -10px; width: 2px; background: #b0c4de; border:none;}
+        .view-radial .tree-children > .tree-node:first-child::after { top: 50%; bottom: -8px; }
+        .view-radial .tree-children > .tree-node:last-child::after { top: -8px; bottom: 50%; }
+        .view-radial .tree-children > .tree-node:not(:first-child):not(:last-child)::after { top: -8px; bottom: -8px; }
         .view-radial .tree-children > .tree-node:first-child:last-child::after { display: none; }
         .view-radial .tree-node::before { border-top: none; }
 
-        .node-main { display: inline-flex; flex-direction: column; padding: 6px 10px; border-radius: 6px; border: 1px solid #d9d9d9; min-width: 220px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative; cursor: pointer; background: var(--status-none); vertical-align: top; z-index: 2;}
-        .node-main.active-focus { outline: 2px solid #1890ff; border-color: #1890ff; box-shadow: 0 0 8px rgba(24,144,255,0.6); }
+        /* 卡片极简设计 */
+        .node-main { display: inline-flex; flex-direction: column; padding: 4px 6px; border-radius: 4px; border: 1px solid #d9d9d9; min-width: 170px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); position: relative; cursor: pointer; background: var(--status-none); vertical-align: top; z-index: 2; transition: all 0.2s;}
+        .node-main.active-focus { outline: 2px solid #1890ff; box-shadow: 0 0 6px rgba(24,144,255,0.6); }
         .node-main.readonly-card { border-style: dashed; }
+        .node-main.drag-over { border: 2px dashed #1890ff !important; background: #e6f7ff !important; transform: scale(1.02); }
         
         .status-ongoing { background-color: var(--status-ongoing) !important; }
         .status-ontime { background-color: var(--status-ontime) !important; }
@@ -93,40 +87,42 @@
         .status-overdue-ok { background-color: var(--status-overdue-ok) !important; }
 
         .node-title-box { display: flex; align-items: center; width: 100%; }
-        .node-prefix { font-weight: bold; color: #2b7cc7; font-size: 13px; flex-shrink: 0;}
-        .node-content-input { border: none; background: transparent; font-size: 14px; font-weight: bold; flex: 1; outline: none; margin-left: 2px;}
-        .node-content-input:read-only { color: #555; cursor: default; }
+        .node-prefix { font-weight: bold; color: #2b7cc7; font-size: 11px; flex-shrink: 0;}
+        .node-content-input { border: none; background: transparent; font-size: 12px; font-weight: bold; flex: 1; outline: none; margin-left: 2px; color: #111;}
+        .node-content-input:read-only { color: #444; cursor: default; }
         
-        .node-meta { font-size: 11px; color: #555; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;}
+        .node-meta { font-size: 10px; color: #555; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;}
         .node-meta span { display: inline-block; }
-        .node-meta select { font-size: 11px; border: 1px solid #ddd; border-radius: 3px; padding: 1px; background: rgba(255,255,255,0.6);}
+        .node-meta select { font-size: 10px; border: 1px solid #ccc; border-radius: 2px; padding: 0; background: rgba(255,255,255,0.8);}
         
-        .node-remark { font-size: 11px; color: #888; margin-top: 6px; border-top: 1px dashed rgba(0,0,0,0.15); padding-top: 4px; cursor: text; min-height: 16px; word-break: break-all;}
-        
-        .toggle-btn { position: absolute; width: 16px; height: 16px; background: #fff; border: 1px solid #ccc; border-radius: 50%; text-align: center; line-height: 14px; font-size: 12px; cursor: pointer; z-index: 10; font-weight: bold; color: #666; box-shadow: 0 1px 2px rgba(0,0,0,0.1);}
-        .view-outline .toggle-btn { left: -8px; top: -8px; }
-        .view-radial .toggle-btn { right: -23px; top: 50%; transform: translateY(-50%); }
+        .node-remark { font-size: 10px; color: #777; margin-top: 4px; border-top: 1px dashed rgba(0,0,0,0.15); padding-top: 2px; cursor: text; min-height: 14px; word-break: break-all;}
+        .node-history { font-size: 9px; color: #c09853; margin-top: 2px; line-height: 1.2; border-top: 1px dotted #eaddc5; padding-top: 2px;}
 
-        .del-node-btn { position: absolute; right: 4px; top: 4px; font-size: 12px; color: #999; cursor: pointer; display: none;}
+        /* 加减号位置 */
+        .toggle-btn { position: absolute; width: 14px; height: 14px; background: #fff; border: 1px solid #aaa; border-radius: 50%; text-align: center; line-height: 12px; font-size: 11px; cursor: pointer; z-index: 10; font-weight: bold; color: #555;}
+        .view-outline .toggle-btn { left: -7px; top: -7px; }
+        .view-radial .toggle-btn { right: -18px; top: 50%; transform: translateY(-50%); }
+
+        .del-node-btn { position: absolute; right: 2px; top: 2px; font-size: 12px; color: #999; cursor: pointer; display: none; line-height:1;}
         .node-main:hover .del-node-btn { display: block; }
         .del-node-btn:hover { color: #e53e3e; font-weight: bold; }
         
         /* 人员名单区 */
         .user-list { overflow-y: auto; flex: 1; list-style: none; }
-        .user-item { padding: 10px; border-bottom: 1px solid #f0f2f5; cursor: pointer; border-radius: 4px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items:center; font-size: 13px;}
+        .user-item { padding: 8px; border-bottom: 1px solid #f0f2f5; cursor: pointer; border-radius: 4px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items:center; font-size: 12px;}
         .user-item:hover { background: #e6f7ff; }
         .user-item.highlight-wizard { background: #fffb8f; border: 1px dashed #fadb14; animation: pulse 1.5s infinite; }
         .user-actions span { display: none; }
         .user-item:hover .user-actions span { display: inline; }
 
-        /* 时间日历窗口 (正常文档流，常驻底部) */
-        .time-window { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px;}
-        .calendar-wrapper { display: flex; gap: 20px; overflow-x: auto; scroll-behavior: smooth; padding-bottom: 5px; }
-        .calendar-month { border: 1px solid #e8e8e8; border-radius: 6px; min-width: 280px; flex: 0 0 auto; background: #fff; padding: 6px; }
-        .calendar-month-title { text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 6px; color: #2b7cc7;}
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 11px; }
-        .calendar-day-head { font-weight: bold; color: #999; padding: 2px; }
-        .calendar-day { padding: 6px 2px; border-radius: 4px; cursor: pointer; color: #333; transition: all 0.2s;}
+        /* 紧凑的时间日历窗口 */
+        .time-window { background: white; border-radius: 8px; padding: 10px 15px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); margin-bottom: 15px; height: 165px;}
+        .calendar-wrapper { display: flex; gap: 15px; overflow-x: auto; scroll-behavior: smooth; padding-bottom: 5px; height: 120px;}
+        .calendar-month { border: 1px solid #e8e8e8; border-radius: 4px; min-width: 230px; flex: 0 0 auto; background: #fff; padding: 4px; }
+        .calendar-month-title { text-align: center; font-weight: bold; font-size: 12px; margin-bottom: 4px; color: #2b7cc7;}
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; text-align: center; font-size: 10px; }
+        .calendar-day-head { font-weight: bold; color: #999; padding: 1px; }
+        .calendar-day { padding: 4px 2px; border-radius: 3px; cursor: pointer; color: #333; transition: all 0.2s;}
         .calendar-day:hover { background: #e6f7ff; }
         .calendar-day.empty { cursor: default; background: transparent !important; }
         .calendar-day.today { background: #1890ff; color: white; font-weight: bold; }
@@ -134,13 +130,13 @@
 
         /* 模态框 */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 3000; }
-        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 700px; max-width: 90%; max-height: 85vh; overflow: auto; position: relative; }
-        .close-modal { position: absolute; top: 12px; right: 15px; font-size: 22px; cursor: pointer; color: #999; border:none; background:none; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 700px; max-width: 90%; max-height: 85vh; overflow: auto; position: relative; }
+        .close-modal { position: absolute; top: 10px; right: 12px; font-size: 20px; cursor: pointer; color: #999; border:none; background:none; }
 
-        .form-item{margin:16px 0;}
-        .form-item label{display:block;margin-bottom:6px;font-weight:bold;color:#333;}
-        .form-item input,.form-item select{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;}
-        .login-btn{width:100%;padding:12px;background:#2b7cc7;color:#fff;border:none;border-radius:6px;font-size:16px;cursor:pointer;}
+        .form-item{margin:12px 0;}
+        .form-item label{display:block;margin-bottom:4px;font-weight:bold;color:#333; font-size:13px;}
+        .form-item input,.form-item select{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px; font-size:13px;}
+        .login-btn{width:100%;padding:10px;background:#2b7cc7;color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer; font-weight:bold;}
         .hide{display:none!important;}
 
         @keyframes pulse {
@@ -158,9 +154,9 @@
 </div>
 
 <div class="top-bar">
-    <h2>团队任务管理系统 V3.1</h2>
+    <h2>团队任务管理系统 V3.2</h2>
     <div class="btn-group">
-        <span id="currentUserInfo" style="font-size: 14px; color:#555;">未登录</span>
+        <span id="currentUserInfo" style="font-size: 13px; color:#555;">未登录</span>
         <button id="loginTriggerBtn" onclick="openLoginModal()">登录系统</button>
         <button id="editPwdBtn" class="hide" style="background:#16a4fa;" onclick="openEditPwd()">修改密码</button>
         <button id="logoutBtn" class="hide" style="background:#e53e3e;" onclick="logout()">退出登录</button>
@@ -168,18 +164,12 @@
     </div>
 </div>
 
-<div class="filter-wrap hide" id="filterWrap">
-    <label><b>查看成员视图：</b></label>
-    <select id="viewUserSelect" onchange="switchView()"></select>
-    <span style="font-size:12px; color:#888; margin-left:10px;">(可切换至下辖人员视角查看或指派任务)</span>
-</div>
-
 <div class="dashboard">
     <h3>📊 任务完成统计</h3>
     <div class="stat-grid" id="statGridBox"></div>
     
     <div class="summary-box">
-        <h4 style="color:#2b7cc7; margin-bottom:10px;">📋 全团队一级任务汇总 <span style="font-size:12px; color:#888; font-weight:normal;">(点击行弹出思维导图溯源)</span></h4>
+        <h4 style="color:#2b7cc7; margin-bottom:10px; font-size:15px;">📋 全团队一级任务汇总 <span style="font-size:12px; color:#888; font-weight:normal;">(点击行弹出溯源图)</span></h4>
         <div style="overflow-x:auto;">
             <table>
                 <thead><tr><th>最终归属人</th><th>计划日期</th><th>任务内容</th><th>当前状态</th><th>备注</th></tr></thead>
@@ -189,7 +179,7 @@
     </div>
 
     <div class="summary-box">
-        <h4 style="color:#2b7cc7; margin-bottom:10px;">📋 独立二级任务汇总 <span style="font-size:12px; color:#888; font-weight:normal;">(无上级的一级任务)</span></h4>
+        <h4 style="color:#2b7cc7; margin-bottom:10px; font-size:15px;">📋 独立二级任务汇总 <span style="font-size:12px; color:#888; font-weight:normal;">(无挂载一级)</span></h4>
         <div style="overflow-x:auto;">
             <table>
                 <thead><tr><th>最终归属人</th><th>计划日期</th><th>任务内容</th><th>当前状态</th><th>备注</th></tr></thead>
@@ -201,21 +191,21 @@
 
 <div class="workspace hide" id="taskContainer">
     <div class="window-box">
-        <div class="window-title">
-            <div>
-                🌿 任务思维树状视窗 
-                <span class="view-btns" style="margin-left: 10px;">
-                    <button id="btnOutlineView" class="active" onclick="switchTreeViewMode('outline')">大纲视图</button>
-                    <button id="btnRadialView" onclick="switchTreeViewMode('radial')">发散视图</button>
+        <div class="window-title" style="flex-wrap: wrap;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
+                🌿 任务思维树状视窗
+                <select id="viewUserSelect" onchange="switchView()" style="font-size:12px; padding:2px; border-radius:4px; max-width:130px;"></select>
+                <span class="view-btns">
+                    <button id="btnOutlineView" class="active" onclick="switchTreeViewMode('outline')">大纲</button>
+                    <button id="btnRadialView" onclick="switchTreeViewMode('radial')">发散</button>
                 </span>
             </div>
-            <div class="action-btns" id="actionBtns">
-                <button id="btnAddL1" onclick="addTreeRoot('一级时间节点')">+ 添加一级</button>
-                <button id="btnAddL2" onclick="addTreeRoot('二级时间节点')">+ 独立二级</button>
-                <button id="btnAddWeek" onclick="addTreeRoot('周任务')" style="background:#1890ff;">+ 独立周任务</button>
+            <div class="action-btns" id="actionBtns" style="margin-bottom:5px;">
+                <button id="btnAddL1" onclick="addTreeRoot('一级时间节点')">+ 增一级</button>
+                <button id="btnAddL2" onclick="addTreeRoot('二级时间节点')">+ 独二级</button>
+                <button id="btnAddWeek" onclick="addTreeRoot('周任务')" style="background:#1890ff;">+ 独周任务</button>
             </div>
         </div>
-        
         <div class="task-split-layout">
             <div class="task-tree-panel view-outline" id="taskTreeBox"></div>
             <div class="task-week-panel view-outline" id="independentWeekBox"></div>
@@ -225,14 +215,14 @@
     <div class="window-box">
         <div class="window-title">
             <span>👥 人员名单</span>
-            <button id="addInlineUserBtn" onclick="openAddUserModal()" style="display:none; font-size:12px; padding:2px 8px; background:#2b7cc7; color:#fff; border:none; border-radius:4px; cursor:pointer;">+ 添加</button>
+            <button id="addInlineUserBtn" onclick="openAddUserModal()" style="display:none; font-size:11px; padding:2px 6px; background:#2b7cc7; color:#fff; border:none; border-radius:3px; cursor:pointer;">+ 添加</button>
         </div>
         <ul class="user-list" id="userListBox"></ul>
     </div>
 </div>
 
 <div class="time-window hide" id="timeWindow">
-    <div style="font-size: 15px; font-weight: bold; color: #2b7cc7; margin-bottom:10px;">📅 计划完成日期选择 <span style="font-size:11px;color:#999;font-weight:normal;">(按住Shift+鼠标滚轮可横向滚动)</span></div>
+    <div style="font-size: 14px; font-weight: bold; color: #2b7cc7; margin-bottom:8px;">📅 计划完成日期 <span style="font-size:11px;color:#999;font-weight:normal;">(Shift+滚轮横向)</span></div>
     <div class="calendar-wrapper" id="calendarWrapper"></div>
 </div>
 
@@ -240,63 +230,51 @@
     <div class="modal-content">
         <button class="close-modal" onclick="closeModal('mindMapModal')">×</button>
         <h3 id="modalTitle" style="color:#2b7cc7; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:5px;">🔍 任务溯源</h3>
-        <div class="view-outline" id="modalTreeContent"></div>
+        <div class="view-radial" id="modalTreeContent" style="padding: 10px; overflow:auto;"></div>
     </div>
 </div>
 
 <div class="modal" id="loginModal">
-    <div class="modal-content" style="width: 400px;">
+    <div class="modal-content" style="width: 350px;">
         <button class="close-modal" onclick="closeModal('loginModal')">×</button>
-        <h2 style="text-align:center;color:#2b7cc7;margin-bottom:15px;">用户登录</h2>
-        <div class="form-item">
-            <label>选择用户</label>
-            <select id="userSelect"></select>
-        </div>
-        <div class="form-item">
-            <label>登录密码</label>
-            <input type="password" id="loginPwd" placeholder="初始密码：8888">
-        </div>
-        <button class="login-btn" onclick="userLogin()">登录</button>
+        <h2 style="text-align:center;color:#2b7cc7;margin-bottom:15px;font-size:18px;">系统登录</h2>
+        <div class="form-item"><label>选择用户</label><select id="userSelect"></select></div>
+        <div class="form-item"><label>密码</label><input type="password" id="loginPwd" placeholder="初始密码：8888"></div>
+        <button class="login-btn" onclick="userLogin()">登 录</button>
     </div>
 </div>
 
 <div class="modal" id="addUserModal">
-    <div class="modal-content" style="width: 400px;">
+    <div class="modal-content" style="width: 350px;">
         <button class="close-modal" onclick="closeModal('addUserModal')">×</button>
-        <h3 style="color:#2b7cc7;margin-bottom:15px;">添加用户</h3>
+        <h3 style="color:#2b7cc7;margin-bottom:15px;">添加成员</h3>
         <div class="form-item"><label>姓名</label><input type="text" id="newUserName"></div>
         <div class="form-item"><label>角色</label><select id="newUserRole"></select></div>
-        <div class="form-item">
-            <label>小组</label>
-            <div id="newUserGroupContainer"><input type="text" id="newUserGroup" value="默认组"></div>
-        </div>
-        <button class="login-btn" onclick="saveNewUser()">保存并添加</button>
+        <div class="form-item"><label>小组</label><input type="text" id="newUserGroup" value="默认组"></div>
+        <button class="login-btn" onclick="saveNewUser()">保 存</button>
     </div>
 </div>
 
 <div class="modal" id="editUserModal">
-    <div class="modal-content" style="width: 400px;">
+    <div class="modal-content" style="width: 350px;">
         <button class="close-modal" onclick="closeModal('editUserModal')">×</button>
-        <h3 style="color:#2b7cc7;margin-bottom:15px;">编辑用户</h3>
+        <h3 style="color:#2b7cc7;margin-bottom:15px;">编辑成员</h3>
         <input type="hidden" id="editUserId">
         <div class="form-item"><label>姓名</label><input type="text" id="editUserName"></div>
         <div class="form-item"><label>角色</label><select id="editUserRole"></select></div>
-        <div class="form-item">
-            <label>小组</label>
-            <div id="editUserGroupContainer"><input type="text" id="editUserGroup"></div>
-        </div>
-        <button class="login-btn" onclick="saveEditUser()">保存修改</button>
+        <div class="form-item"><label>小组</label><input type="text" id="editUserGroup"></div>
+        <button class="login-btn" onclick="saveEditUser()">修 改</button>
     </div>
 </div>
 
 <div class="modal" id="editPwdModal">
-    <div class="modal-content" style="width: 400px;">
+    <div class="modal-content" style="width: 350px;">
         <button class="close-modal" onclick="closeModal('editPwdModal')">×</button>
         <h3 style="color:#2b7cc7;margin-bottom:15px;">修改密码</h3>
         <div class="form-item"><label>原密码</label><input type="password" id="oldPwd"></div>
         <div class="form-item"><label>新密码</label><input type="password" id="newPwd"></div>
         <div class="form-item"><label>确认新密码</label><input type="password" id="confirmPwd"></div>
-        <button class="login-btn" onclick="saveMyPwd()">确认修改</button>
+        <button class="login-btn" onclick="saveMyPwd()">确 认</button>
     </div>
 </div>
 
@@ -304,7 +282,7 @@
 const API = "/api";
 let userList = [];
 let currentUser = null;
-let viewUid = null; // 当前正在查看的视角ID
+let viewUid = null; 
 let globalTaskData = {}; 
 let displayTasks = [];   
 
@@ -313,7 +291,7 @@ const roleText = { cto:"CTO", hw_manager:"硬件经理", sw_manager:"软件经�
 let wizardState = { activeNodeId: null, step: null }; 
 let currentViewMode = "outline"; 
 
-/* ================= 通用 API ================= */
+/* ================= 工具 ================= */
 async function get(url){ try{ const r=await fetch(API+url); return await r.json(); }catch(e){ return null; } }
 async function post(url,d){ try{ const r=await fetch(API+url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}); return await r.json(); }catch(e){ return {ok:false}; } }
 
@@ -324,20 +302,16 @@ function getGroupType(groupName) {
     if (groupName.includes("下线")) return 7; return 99; 
 }
 function extractGroupNumber(groupName) {
-    if (!groupName) return 999;
-    const match = groupName.match(/[一二三四五六七八九十\d]+/);
-    if (!match) return 999;
+    if (!groupName) return 999; const match = groupName.match(/[一二三四五六七八九十\d]+/); if (!match) return 999;
     const numberMap = { '一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10 };
     return numberMap[match[0]] ?? parseInt(match[0], 10) ?? 999;
 }
 function compareUserByRoleAndName(a, b) {
     const lvlA = roleLevel[a.role] || 0; const lvlB = roleLevel[b.role] || 0;
-    if (lvlB !== lvlA) return lvlB - lvlA; 
-    return a.name.localeCompare(b.name, 'zh'); 
+    if (lvlB !== lvlA) return lvlB - lvlA; return a.name.localeCompare(b.name, 'zh'); 
 }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-/* ================= 权限核心逻辑 ================= */
 function canViewUserLogic(viewer, target) {
     if(!viewer || !target) return false;
     if(viewer.role === 'cto') return true;
@@ -350,84 +324,80 @@ function canViewUserLogic(viewer, target) {
     return false;
 }
 function getSuperiors(uid) {
-    let target = userList.find(x => x.id == uid);
-    if(!target) return [];
+    let target = userList.find(x => x.id == uid); if(!target) return [];
     return userList.filter(viewer => canViewUserLogic(viewer, target) && viewer.id !== uid && roleLevel[viewer.role] > roleLevel[target.role]).map(x => x.id);
 }
 function getSubordinates(uid) {
-    let viewer = userList.find(x => x.id == uid);
-    if(!viewer) return [];
+    let viewer = userList.find(x => x.id == uid); if(!viewer) return [];
     return userList.filter(target => canViewUserLogic(viewer, target) && target.id !== uid).map(x => x.id);
 }
-function isSuperiorOrSelf(viewerId, targetId) {
-    if(viewerId === targetId) return true;
-    return getSuperiors(targetId).includes(viewerId);
-}
+function isSuperiorOrSelf(viewerId, targetId) { return viewerId === targetId || getSuperiors(targetId).includes(viewerId); }
 function canManageUser() { return currentUser && currentUser.role !== "member"; }
-function canEditOrDeleteUser(target) {
-    if(!currentUser || target.id === 1) return false;
-    return roleLevel[target.role] < roleLevel[currentUser.role];
-}
+function canEditOrDeleteUser(target) { return currentUser && target.id !== 1 && roleLevel[target.role] < roleLevel[currentUser.role]; }
 
-/* ================= 节点权限控制 ================= */
 function canDeleteNode(task) {
     if(!currentUser) return false;
     if(task.type === '一级时间节点' || task.type === '二级时间节点') return currentUser.role === 'cto';
-    // 周任务
     return isSuperiorOrSelf(currentUser.id, task.creatorId);
 }
 function canEditContent(task) { return canDeleteNode(task); }
 function canEditMeta(task) {
-    if(!currentUser) return false;
-    if(currentUser.role === 'cto') return true;
-    let ownerUser = userList.find(u => u.name === task.owner);
-    let ownerId = ownerUser ? ownerUser.id : null;
+    if(!currentUser) return false; if(currentUser.role === 'cto') return true;
+    let ownerId = (userList.find(u => u.name === task.owner) || {}).id;
     return isSuperiorOrSelf(currentUser.id, task.creatorId) || (ownerId && isSuperiorOrSelf(currentUser.id, ownerId));
 }
 
-/* ================= 旧数据平滑升级引擎 ================= */
+/* ================= 核心升级引擎 ================= */
 function adaptOldData() {
-    // 赋予老任务 type 标签与 ID
+    let allL1 = [], allL2 = [];
     userList.forEach(u => {
-        let d = globalTaskData[u.id];
-        if (!d) return;
+        let d = globalTaskData[u.id]; if (!d) return;
         ['l1', 'l2', 'week'].forEach(k => {
             (d[k] || []).forEach(t => {
                 if (!t.id) t.id = "old_" + Math.random().toString(36).substring(2);
-                if (!t.type) {
-                    if (k === 'l1') t.type = '一级时间节点';
-                    if (k === 'l2') t.type = '二级时间节点';
-                    if (k === 'week') t.type = '周任务';
-                }
-                if (!t.creatorId) t.creatorId = u.id; // 兜底创作者
+                if (!t.type) { if (k === 'l1') t.type = '一级时间节点'; if (k === 'l2') t.type = '二级时间节点'; if (k === 'week') t.type = '周任务'; }
+                if (!t.creatorId) t.creatorId = u.id; 
+                if (!t.owner) t.owner = u.name; // 找回归属人
+                
+                if (k === 'l1') allL1.push(t);
+                if (k === 'l2') allL2.push(t);
             });
         });
     });
-    // 重建老任务基于 parent 名称的父子映射
-    let allL1 = [];
-    userList.forEach(u => { let d = globalTaskData[u.id]; if (d && d.l1) allL1.push(...d.l1); });
+
     userList.forEach(u => {
-        let d = globalTaskData[u.id];
-        if (!d) return;
-        ['l2', 'week'].forEach(k => {
-            (d[k] || []).forEach(t => {
-                if (t.pid === undefined && t.parent) {
-                    let match = allL1.find(l1 => l1.content === t.parent);
-                    t.pid = match ? match.id : null;
+        let d = globalTaskData[u.id]; if (!d) return;
+        (d.l2 || []).forEach(t => {
+            if (!t.pid && t.parent) { let m = allL1.find(x => x.content === t.parent); if (m) t.pid = m.id; }
+        });
+        (d.week || []).forEach(t => {
+            if (!t.pid && t.parent) {
+                let m2 = allL2.find(x => x.content === t.parent);
+                if (m2) t.pid = m2.id;
+                else {
+                    let m1 = allL1.find(x => x.content === t.parent);
+                    if (m1) {
+                        let dL2 = allL2.find(x => x.pid === m1.id && x.content === "默认分类");
+                        if (!dL2) {
+                            dL2 = { id: "def_" + Math.random().toString(36).substring(2), pid: m1.id, type: '二级时间节点', content: "默认分类", owner: m1.owner, creatorId: m1.creatorId, date: m1.date, status: "进行中", remark: "自动归类", history: [] };
+                            allL2.push(dL2);
+                            let ownerU = userList.find(x => x.name === m1.owner) || u;
+                            if(!globalTaskData[ownerU.id].l2) globalTaskData[ownerU.id].l2 = [];
+                            globalTaskData[ownerU.id].l2.push(dL2);
+                        }
+                        t.pid = dL2.id;
+                    }
                 }
-            });
+            }
         });
     });
 }
 
-/* ================= 全局数据加载 ================= */
+/* ================= 登录与初始化 ================= */
 async function loadSystemData() {
-    userList = await get("/users") || [];
-    userList.sort(compareUserByRoleAndName);
-    
+    userList = await get("/users") || []; userList.sort(compareUserByRoleAndName);
     const s = document.getElementById("userSelect"); s.innerHTML = "";
     userList.forEach(u=>{ s.innerHTML += `<option value="${u.id}">${u.name} (${roleText[u.role]||u.role})</option>`; });
-
     globalTaskData = {};
     const reqs = userList.map(async (u) => { globalTaskData[u.id] = await get(`/task/${u.id}`) || {l1:[], l2:[], week:[]}; });
     await Promise.all(reqs);
@@ -436,16 +406,12 @@ async function loadSystemData() {
 
 function openLoginModal(){ document.getElementById("loginPwd").value=""; document.getElementById("loginModal").style.display="flex"; }
 async function userLogin(){
-    const uid = document.getElementById("userSelect").value;
-    const p = document.getElementById("loginPwd").value;
-    const u = userList.find(x=>x.id==uid);
-    if(!u) return;
+    const uid = document.getElementById("userSelect").value; const p = document.getElementById("loginPwd").value;
+    const u = userList.find(x=>x.id==uid); if(!u) return;
     if(u.role!=="member" && u.pwd!==btoa(p)){alert("密码错误");return;}
     await post("/login",{id:uid});
-    currentUser = u; 
-    viewUid = u.id; // 默认看自己
-    closeModal("loginModal");
-    refreshUI();
+    currentUser = u; viewUid = u.id; 
+    closeModal("loginModal"); refreshUI();
 }
 function logout(){ currentUser = null; viewUid = null; refreshUI(); }
 
@@ -455,82 +421,59 @@ function refreshUI() {
     document.getElementById("logoutBtn").classList.toggle("hide", !isLog);
     document.getElementById("editPwdBtn").classList.toggle("hide", !isLog || (currentUser&&currentUser.role==="member"));
     document.getElementById("exportBtn").classList.toggle("hide", !isLog);
-    
     document.getElementById("taskContainer").classList.toggle("hide", !isLog);
     document.getElementById("timeWindow").classList.toggle("hide", !isLog);
-    document.getElementById("filterWrap").classList.toggle("hide", !isLog);
     
     if(isLog) {
         document.getElementById("currentUserInfo").innerText = `当前登录：${currentUser.name} (${currentUser.group})`;
         document.getElementById("btnAddL1").disabled = currentUser.role === 'member';
         document.getElementById("btnAddL2").disabled = currentUser.role === 'member';
-        
-        refreshViewSelect();
-        renderUserList();
-        flattenAndFilterTasks();
-        renderTaskTree();
-    } else {
-        document.getElementById("currentUserInfo").innerText = "未登录";
-    }
+        refreshViewSelect(); renderUserList(); flattenAndFilterTasks(); renderTaskTree();
+    } else { document.getElementById("currentUserInfo").innerText = "未登录"; }
     renderDashboard();
 }
 
 function refreshViewSelect() {
     const s = document.getElementById("viewUserSelect"); s.innerHTML = "";
-    if(!currentUser) return;
     let viewable = [currentUser, ...getSubordinates(currentUser.id).map(id => userList.find(u=>u.id==id))];
     viewable.sort(compareUserByRoleAndName);
-    viewable.forEach(u => {
-        let sel = (u.id == viewUid) ? "selected" : "";
-        s.innerHTML += `<option value="${u.id}" ${sel}>${u.name} (${roleText[u.role]||u.role})</option>`;
-    });
+    viewable.forEach(u => { s.innerHTML += `<option value="${u.id}" ${u.id==viewUid?"selected":""}>${u.name} (${roleText[u.role]||u.role})</option>`; });
 }
-
-function switchView() {
-    viewUid = Number(document.getElementById("viewUserSelect").value);
-    flattenAndFilterTasks();
-    renderTaskTree();
-}
+function switchView() { viewUid = Number(document.getElementById("viewUserSelect").value); flattenAndFilterTasks(); renderTaskTree(); }
 
 function renderUserList() {
     const box = document.getElementById("userListBox"); box.innerHTML = "";
-    if(!currentUser) return;
     document.getElementById("addInlineUserBtn").style.display = canManageUser() ? "inline-block" : "none";
-    
     let viewable = [currentUser, ...getSubordinates(currentUser.id).map(id => userList.find(u=>u.id==id))];
-    viewable.sort(compareUserByRoleAndName);
+    
+    // 按统计的排序规则
+    viewable.sort((a,b) => {
+        let admA = ["cto","hw_manager","sw_manager","mech_manager","manager"].includes(a.role);
+        let admB = ["cto","hw_manager","sw_manager","mech_manager","manager"].includes(b.role);
+        if (admA && !admB) return -1; if (!admA && admB) return 1; if (admA && admB) return compareUserByRoleAndName(a, b);
+        let ta=getGroupType(a.group); let tb=getGroupType(b.group); if(ta!==tb) return ta-tb;
+        let na=extractGroupNumber(a.group); let nb=extractGroupNumber(b.group); if(na!==nb) return na-nb;
+        return compareUserByRoleAndName(a, b);
+    });
+
     viewable.forEach(u => {
-        let btns = "";
-        if(canEditOrDeleteUser(u)) {
-            btns = `<span style="font-size:12px; color:#2b7cc7; margin-right:8px;" onclick="openEditUserModal(${u.id}); event.stopPropagation();">编辑</span>
-                    <span style="font-size:12px; color:#e53e3e;" onclick="deleteUser(${u.id}); event.stopPropagation();">删除</span>`;
-        }
-        box.innerHTML += `<li class="user-item" onclick="handleUserSelect('${u.name}')">
-            <span><b>${u.name}</b> <small style='color:#888;'>${u.group}</small></span>
-            <div class="user-actions">${btns}</div>
-        </li>`;
+        let btns = canEditOrDeleteUser(u) ? `<span style="font-size:12px; color:#2b7cc7; margin-right:8px;" onclick="openEditUserModal(${u.id}); event.stopPropagation();">编辑</span><span style="font-size:12px; color:#e53e3e;" onclick="deleteUser(${u.id}); event.stopPropagation();">删除</span>` : "";
+        box.innerHTML += `<li class="user-item" onclick="handleUserSelect('${u.name}')"><span><b>${u.name}</b> <small style='color:#888;'>${u.group}</small></span><div class="user-actions">${btns}</div></li>`;
     });
 }
 
-/* ================= 任务展平与过滤 ================= */
 function flattenAndFilterTasks() {
     if(!currentUser || !viewUid) return;
-    let allMap = new Map();
     let viewer = userList.find(u => u.id == viewUid);
-    
     let scopeIds = [viewer.id, ...getSubordinates(viewer.id)];
-    scopeIds.forEach(id => {
-        let d = globalTaskData[id];
-        if(d) {
-            (d.l1||[]).forEach(t => allMap.set(t.id, t));
-            (d.l2||[]).forEach(t => allMap.set(t.id, t));
-            (d.week||[]).forEach(t => allMap.set(t.id, t));
-        }
-    });
+    let tempL1=[], tempL2=[], tempWeek=[];
+    scopeIds.forEach(id => { let d = globalTaskData[id]; if(d) { if(d.l1)tempL1.push(...d.l1); if(d.l2)tempL2.push(...d.l2); if(d.week)tempWeek.push(...d.week); } });
 
-    displayTasks = Array.from(allMap.values()).filter(t => {
+    let uMap = new Map();
+    [...tempL1, ...tempL2, ...tempWeek].forEach(t => { if(!uMap.has(t.id)) uMap.set(t.id, t); });
+
+    displayTasks = Array.from(uMap.values()).filter(t => {
         if (t.type !== '周任务') return true; 
-        // 视角下的周任务：如果是该视角的任务，或由该视角指派下去的
         let isMyWeek = t.owner === viewer.name;
         let ownerUser = userList.find(u=>u.name === t.owner);
         let isCreatedForSub = t.creatorId == viewer.id && ownerUser && scopeIds.includes(ownerUser.id);
@@ -538,34 +481,31 @@ function flattenAndFilterTasks() {
     });
 }
 
-/* ================= 网络层持久化同步 ================= */
-async function saveGlobalTask(updatedTask) {
+/* ================= 任务增删改拖拽 ================= */
+async function saveGlobalTask(updatedTask, oldType = null) {
     for (let u of userList) {
-        let uData = globalTaskData[u.id];
-        if (!uData) continue;
-        let changed = false;
-        ['l1','l2','week'].forEach(k => {
-            let idx = (uData[k]||[]).findIndex(t => t.id === updatedTask.id);
-            if (idx !== -1) { uData[k][idx] = { ...updatedTask }; changed = true; }
-        });
-        if (changed) await post("/task/save", {uid: u.id, data: uData});
+        let d = globalTaskData[u.id]; if (!d) continue; let changed = false;
+        if (oldType && oldType !== updatedTask.type) {
+            let oK = oldType==='一级时间节点'?'l1':(oldType==='二级时间节点'?'l2':'week');
+            let nK = updatedTask.type==='一级时间节点'?'l1':(updatedTask.type==='二级时间节点'?'l2':'week');
+            let idx = d[oK].findIndex(t=>t.id===updatedTask.id);
+            if (idx!==-1) { d[oK].splice(idx,1); d[nK].push({...updatedTask}); changed = true; }
+        } else {
+            ['l1','l2','week'].forEach(k => { let idx=(d[k]||[]).findIndex(t=>t.id===updatedTask.id); if(idx!==-1){ d[k][idx]={...updatedTask}; changed=true; } });
+        }
+        if (changed) await post("/task/save", {uid: u.id, data: d});
     }
     flattenAndFilterTasks(); renderDashboard();
 }
 
 async function distributeNewTask(newTask) {
-    let ownerUser = userList.find(u => u.name === newTask.owner);
-    let targetUids = new Set();
-    targetUids.add(newTask.creatorId);
-    if(ownerUser) targetUids.add(ownerUser.id);
-    
-    if(newTask.type !== '周任务') { getSuperiors(newTask.creatorId).forEach(id => targetUids.add(id)); }
-    
+    let targetUids = new Set(); targetUids.add(newTask.creatorId);
+    let ownerUser = userList.find(u => u.name === newTask.owner); if(ownerUser) targetUids.add(ownerUser.id);
+    if(newTask.type !== '周任务') getSuperiors(newTask.creatorId).forEach(id => targetUids.add(id));
     for (let uid of targetUids) {
-        let uData = globalTaskData[uid] || {l1:[], l2:[], week:[]};
-        let k = newTask.type === '一级时间节点' ? 'l1' : (newTask.type === '二级时间节点' ? 'l2' : 'week');
-        uData[k].push(newTask);
-        await post("/task/save", {uid: uid, data: uData});
+        let d = globalTaskData[uid] || {l1:[], l2:[], week:[]};
+        let k = newTask.type === '一级时间节点'?'l1':(newTask.type==='二级时间节点'?'l2':'week');
+        d[k].push(newTask); await post("/task/save", {uid: uid, data: d});
     }
     flattenAndFilterTasks(); renderDashboard();
 }
@@ -574,152 +514,144 @@ async function executeDelete(id) {
     let idsToDelete = [id];
     function collect(pid) { displayTasks.filter(t=>t.pid===pid).forEach(c=>{ idsToDelete.push(c.id); collect(c.id); }); }
     collect(id);
-
     for (let u of userList) {
-        let uData = globalTaskData[u.id];
-        if (!uData) continue;
-        let changed = false;
-        ['l1','l2','week'].forEach(k => {
-            let oldLen = uData[k].length;
-            uData[k] = uData[k].filter(t => !idsToDelete.includes(t.id));
-            if(uData[k].length !== oldLen) changed = true;
-        });
-        if(changed) await post("/task/save", {uid: u.id, data: uData});
+        let d = globalTaskData[u.id]; if (!d) continue; let changed = false;
+        ['l1','l2','week'].forEach(k => { let oldL=d[k].length; d[k]=d[k].filter(t=>!idsToDelete.includes(t.id)); if(d[k].length!==oldL) changed=true; });
+        if(changed) await post("/task/save", {uid: u.id, data: d});
     }
     if(idsToDelete.includes(wizardState.activeNodeId)) endWizard();
     flattenAndFilterTasks(); renderTaskTree(); renderDashboard();
 }
 
-/* ================= 脑图树渲染 ================= */
+/* 拖拽引擎 */
+function dragStart(e, id) { e.dataTransfer.setData("text/plain", id); e.stopPropagation(); }
+function dragOver(e, el) { e.preventDefault(); $(el).addClass('drag-over'); }
+function dragLeave(e, el) { $(el).removeClass('drag-over'); }
+async function dropNode(e, targetId, el) {
+    e.preventDefault(); e.stopPropagation(); $(el).removeClass('drag-over');
+    let draggedId = e.dataTransfer.getData("text/plain"); if (draggedId === targetId) return;
+    let dn = displayTasks.find(t=>t.id===draggedId); let tn = displayTasks.find(t=>t.id===targetId);
+    if (!dn || !tn || !canEditContent(dn)) { alert("无权限或无效拖拽"); return; }
+    
+    let oldType = dn.type; let changed = false;
+    if (dn.type === '周任务' && tn.type === '一级时间节点') { dn.type = '二级时间节点'; dn.pid = tn.id; changed = true; } // 升级
+    else if (dn.type === '二级时间节点' && tn.type === '一级时间节点') { dn.pid = tn.id; changed = true; } // 换一级
+    else if (dn.type === '周任务' && tn.type === '二级时间节点') { dn.pid = tn.id; changed = true; } // 换二级
+    else if (dn.pid === tn.pid && dn.type === tn.type) { // 同级排序
+        for (let u of userList) {
+            let d = globalTaskData[u.id]; if (!d) continue;
+            let key = dn.type==='一级时间节点'?'l1':(dn.type==='二级时间节点'?'l2':'week');
+            let arr = d[key]; if(!arr) continue;
+            let dIdx = arr.findIndex(t=>t.id===dn.id); let tIdx = arr.findIndex(t=>t.id===tn.id);
+            if (dIdx!==-1 && tIdx!==-1) {
+                let [item] = arr.splice(dIdx,1); tIdx = arr.findIndex(t=>t.id===tn.id);
+                arr.splice(tIdx,0,item); await post("/task/save", {uid: u.id, data: d});
+            }
+        }
+        flattenAndFilterTasks(); renderTaskTree(); return;
+    } else { alert("非法拖拽"); return; }
+    
+    if (changed) { await saveGlobalTask(dn, oldType); renderTaskTree(); }
+}
+
+/* ================= UI 渲染 ================= */
 function switchTreeViewMode(mode) {
-    currentViewMode = mode;
-    $(".view-btns button").removeClass("active");
-    if(mode === 'outline') {
-        $("#btnOutlineView").addClass("active");
-        $("#taskTreeBox, #independentWeekBox").removeClass("view-radial").addClass("view-outline");
-    } else {
-        $("#btnRadialView").addClass("active");
-        $("#taskTreeBox, #independentWeekBox").removeClass("view-outline").addClass("view-radial");
-    }
+    currentViewMode = mode; $(".view-btns button").removeClass("active");
+    if(mode === 'outline') { $("#btnOutlineView").addClass("active"); $("#taskTreeBox, #independentWeekBox").removeClass("view-radial").addClass("view-outline"); } 
+    else { $("#btnRadialView").addClass("active"); $("#taskTreeBox, #independentWeekBox").removeClass("view-outline").addClass("view-radial"); }
 }
-function getPrefix(type) {
-    if(type === "一级时间节点") return "【一】"; if(type === "二级时间节点") return "【二】"; if(type === "周任务") return "【周】"; return "";
-}
+function getPrefix(type) { if(type==="一级时间节点") return "【一】"; if(type==="二级时间节点") return "【二】"; if(type==="周任务") return "【周】"; return ""; }
+
 function renderTaskTree() {
     const mainBox = document.getElementById("taskTreeBox"); const weekBox = document.getElementById("independentWeekBox");
     mainBox.innerHTML = ""; weekBox.innerHTML = '<h4 style="font-size:13px; color:#666; margin-bottom:10px; text-align:center; border-bottom:1px dashed #ccc; padding-bottom:5px;">独立周任务专区</h4>';
     
-    let roots = displayTasks.filter(t => !t.pid);
-    roots.forEach(root => {
+    displayTasks.filter(t => !t.pid).forEach(root => {
         if (root.type === "周任务") weekBox.appendChild(buildTreeNodeDOM(root));
         else mainBox.appendChild(buildTreeNodeDOM(root));
     });
 }
+
 function buildTreeNodeDOM(node) {
     let div = document.createElement("div"); div.className = "tree-node"; div.id = `node_wrap_${node.id}`;
     let children = displayTasks.filter(t => t.pid === node.id);
-    let hasChildren = children.length > 0;
-    
     let statusClass = "status-none";
-    if (node.status === "进行中") statusClass = "status-ongoing"; else if (node.status === "按时完成") statusClass = "status-ontime";
-    else if (node.status === "延期未完成") statusClass = "status-overdue-no"; else if (node.status === "延期完成") statusClass = "status-overdue-ok";
+    if (node.status==="进行中") statusClass="status-ongoing"; else if (node.status==="按时完成") statusClass="status-ontime";
+    else if (node.status==="延期未完成") statusClass="status-overdue-no"; else if (node.status==="延期完成") statusClass="status-overdue-ok";
 
     let focusClass = (wizardState.activeNodeId === node.id) ? "active-focus" : "";
-    let isContentEditable = canEditContent(node); let isMetaEditable = canEditMeta(node);
-    let readonlyClass = (!isContentEditable && !isMetaEditable) ? "readonly-card" : "";
+    let isC = canEditContent(node); let isM = canEditMeta(node);
+    
+    let histHtml = (node.history && node.history.length > 0) ? `<div class="node-history">${node.history.join('<br>')}</div>` : "";
 
     let html = `
-        <div class="node-main ${statusClass} ${focusClass} ${readonlyClass}" onclick="startTaskWizard('${node.id}', event)">
-            ${hasChildren ? `<div class="toggle-btn" onclick="toggleNodeCollapse('${node.id}', event)">${node.isCollapsed ? '+' : '-'}</div>` : ''}
-            ${canDeleteNode(node) ? `<span class="del-node-btn" onclick="deleteNode('${node.id}', event)" title="删除此节点">×</span>` : ''}
-            <div class="node-title-box">
-                <span class="node-prefix">${getPrefix(node.type)}</span>
-                <input class="node-content-input" value="${node.content}" onchange="updateNodeContent('${node.id}', this.value)" ${!isContentEditable?'readonly':''} />
-            </div>
+        <div class="node-main ${statusClass} ${focusClass} ${(!isC&&!isM)?'readonly-card':''}" onclick="startTaskWizard('${node.id}', event)" draggable="${isC?'true':'false'}" ondragstart="dragStart(event, '${node.id}')" ondragover="dragOver(event, this)" ondragleave="dragLeave(event, this)" ondrop="dropNode(event, '${node.id}', this)">
+            ${children.length>0 ? `<div class="toggle-btn" onclick="toggleNodeCollapse('${node.id}', event)">${node.isCollapsed ? '+' : '-'}</div>` : ''}
+            ${canDeleteNode(node) ? `<span class="del-node-btn" onclick="deleteNode('${node.id}', event)" title="删除">×</span>` : ''}
+            <div class="node-title-box"><span class="node-prefix">${getPrefix(node.type)}</span><input class="node-content-input" value="${node.content}" onchange="updateNodeContent('${node.id}', this.value)" ${!isC?'readonly':''} /></div>
             <div class="node-meta">
-                <span>归属: <b>${node.owner || '-'}</b></span>
-                <span>计划: <b>${node.date || '-'}</b></span>
-                <span>状态: 
-                    <select onclick="event.stopPropagation()" onchange="updateNodeStatus('${node.id}', this.value)" ${!isMetaEditable?'disabled':''}>
-                        <option value="进行中" ${node.status==='进行中'?'selected':''}>进行中</option>
-                        <option value="按时完成" ${node.status==='按时完成'?'selected':''}>按时完成</option>
-                        <option value="延期未完成" ${node.status==='延期未完成'?'selected':''}>延期未完成</option>
-                        <option value="延期完成" ${node.status==='延期完成'?'selected':''}>延期完成</option>
-                    </select>
-                </span>
-                ${node.actualDate ? `<span>实际: ${node.actualDate}</span>` : ''}
+                <span>👤 <b>${node.owner || '-'}</b></span>
+                <span>📅 <b>${node.date || '-'}</b></span>
+                <span>📈 <select onclick="event.stopPropagation()" onchange="updateNodeStatus('${node.id}', this.value)" ${!isM?'disabled':''}>
+                    <option value="进行中" ${node.status==='进行中'?'selected':''}>进行中</option><option value="按时完成" ${node.status==='按时完成'?'selected':''}>按时完成</option><option value="延期未完成" ${node.status==='延期未完成'?'selected':''}>延期未完成</option><option value="延期完成" ${node.status==='延期完成'?'selected':''}>延期完成</option>
+                </select></span>
             </div>
-            <div class="node-remark" ${isMetaEditable?'contenteditable="true"':''} onclick="event.stopPropagation()" onblur="updateNodeRemark('${node.id}', this.innerText)">${node.remark || (isMetaEditable?'(点击输入备注)':'')}</div>
-        </div>
-    `;
+            <div class="node-remark" ${isM?'contenteditable="true"':''} onclick="event.stopPropagation()" onblur="updateNodeRemark('${node.id}', this.innerText)">${node.remark || (isM?'(添加备注)':'')}</div>
+            ${histHtml}
+        </div>`;
     div.innerHTML = html;
 
-    if (!node.isCollapsed && hasChildren) {
+    if (!node.isCollapsed && children.length>0) {
         let childContainer = document.createElement("div"); childContainer.className = "tree-children";
-        children.forEach(child => childContainer.appendChild(buildTreeNodeDOM(child)));
-        div.appendChild(childContainer);
+        children.forEach(c => childContainer.appendChild(buildTreeNodeDOM(c))); div.appendChild(childContainer);
     }
     return div;
 }
 
 /* ================= 键盘与向导 ================= */
-function autoFocusInput(id) { setTimeout(() => { let input = $(`#node_wrap_${id}`).find('.node-content-input')[0]; if(input) { input.focus(); input.select(); } }, 50); }
+function autoFocusInput(id) { setTimeout(() => { let i = $(`#node_wrap_${id}`).find('.node-content-input')[0]; if(i) { i.focus(); i.select(); } }, 50); }
 
 $(document).on("keydown", function(e) {
     if (!wizardState.activeNodeId) return;
     if ($(e.target).hasClass("node-content-input")) {
-        let currentNode = displayTasks.find(t => t.id === wizardState.activeNodeId);
-        if (!currentNode) return;
-        if(currentNode.type !== '周任务' && currentUser.role === 'member') return;
+        let curr = displayTasks.find(t => t.id === wizardState.activeNodeId);
+        if (!curr || (curr.type !== '周任务' && currentUser.role === 'member')) return;
 
         if (e.key === "Enter") {
-            e.preventDefault(); let newId = String(Date.now());
-            let newSibling = { id: newId, pid: currentNode.pid, type: currentNode.type, content: "新任务", owner: "", creatorId: currentUser.id, date: "", status: "进行中", remark: "", actualDate: "", isCollapsed: false, history: [] };
-            distributeNewTask(newSibling).then(()=>{ startTaskWizard(newId, {stopPropagation:()=>{}}); autoFocusInput(newId); });
+            e.preventDefault(); let nId = String(Date.now());
+            let nSib = { id: nId, pid: curr.pid, type: curr.type, content: "新任务", owner: "", creatorId: currentUser.id, date: "", status: "进行中", remark: "", actualDate: "", isCollapsed: false, history: [] };
+            distributeNewTask(nSib).then(()=>{ startTaskWizard(nId, {stopPropagation:()=>{}}); autoFocusInput(nId); });
         } 
         else if (e.key === "Tab") {
             e.preventDefault();
-            if (currentNode.type === "周任务") { alert("⚠️ 周任务为底层节点，无法继续向下拆分。"); return; }
-            let newId = String(Date.now()); let subType = currentNode.type === "一级时间节点" ? "二级时间节点" : "周任务";
-            let newChild = { id: newId, pid: currentNode.id, type: subType, content: "新任务", owner: "", creatorId: currentUser.id, date: "", status: "进行中", remark: "", actualDate: "", isCollapsed: false, history:[] };
-            currentNode.isCollapsed = false; saveGlobalTask(currentNode);
-            distributeNewTask(newChild).then(()=>{ startTaskWizard(newId, {stopPropagation:()=>{}}); autoFocusInput(newId); });
+            if (curr.type === "周任务") { alert("⚠️ 周任务为底层节点，无法继续向下拆分。"); return; }
+            let nId = String(Date.now()); let subType = curr.type === "一级时间节点" ? "二级时间节点" : "周任务";
+            let nChild = { id: nId, pid: curr.id, type: subType, content: "新任务", owner: "", creatorId: currentUser.id, date: "", status: "进行中", remark: "", actualDate: "", isCollapsed: false, history:[] };
+            curr.isCollapsed = false; saveGlobalTask(curr);
+            distributeNewTask(nChild).then(()=>{ startTaskWizard(nId, {stopPropagation:()=>{}}); autoFocusInput(nId); });
         }
     }
 });
 
 function startTaskWizard(nodeId, event) {
-    event.stopPropagation();
-    let node = displayTasks.find(t => t.id === nodeId);
-    if(!node || !canEditMeta(node)) return;
-
+    event.stopPropagation(); let node = displayTasks.find(t => t.id === nodeId); if(!node || !canEditMeta(node)) return;
     wizardState.activeNodeId = nodeId; wizardState.step = 'OWNER';
-    $(".node-main").removeClass("active-focus");
-    $(`#node_wrap_${nodeId} > .node-main`).addClass("active-focus");
-    $("#wizardTipBar").fadeIn(200);
-    $("#wizardTipText").html(`👉 <b>一: 选人</b> 请在右侧名单左键指派归属人。`);
-    $(".user-item").addClass("highlight-wizard");
+    $(".node-main").removeClass("active-focus"); $(`#node_wrap_${nodeId} > .node-main`).addClass("active-focus");
+    $("#wizardTipBar").fadeIn(200); $("#wizardTipText").html(`👉 <b>一: 选人</b> 请在右侧名单左键指派归属人。`); $(".user-item").addClass("highlight-wizard");
 }
 function handleUserSelect(userName) {
     if (wizardState.step !== 'OWNER') return;
-    let node = displayTasks.find(t => t.id === wizardState.activeNodeId);
-    if (node) { node.owner = userName; saveGlobalTask(node); }
-    wizardState.step = 'DATE';
-    $(".user-item").removeClass("highlight-wizard");
-    $("#wizardTipText").html(`👉 <b>二: 定时</b> 请在下方选择日期。`);
-    $(".calendar-day:not(.empty)").addClass("highlight-wizard");
-    renderTaskTree();
-    document.getElementById('timeWindow').scrollIntoView({behavior: 'smooth', block: 'center'});
+    let node = displayTasks.find(t => t.id === wizardState.activeNodeId); if (node) { node.owner = userName; saveGlobalTask(node); }
+    wizardState.step = 'DATE'; $(".user-item").removeClass("highlight-wizard");
+    $("#wizardTipText").html(`👉 <b>二: 定时</b> 请在下方选择日期。`); $(".calendar-day:not(.empty)").addClass("highlight-wizard");
+    renderTaskTree(); document.getElementById('timeWindow').scrollIntoView({behavior: 'smooth', block: 'center'});
 }
 async function handleCalendarDayClick(dateStr) {
     if (wizardState.step !== 'DATE') return;
-    let node = displayTasks.find(t => t.id === wizardState.activeNodeId);
-    if (!node) return;
+    let node = displayTasks.find(t => t.id === wizardState.activeNodeId); if (!node) return;
     if (node.type !== '周任务' && node.date && node.date !== dateStr) {
-        let reason = prompt("修改一、二级任务的计划完成时间需要输入修改原因：");
-        if (!reason) return;
-        node.history = node.history || [];
-        node.history.push(`[日期] ${node.date}->${dateStr} 原因:${reason}`);
+        let reason = prompt("修改一、二级任务的时间需输入原因："); if (!reason) return;
+        node.history = node.history || []; node.history.push(`⏰ ${node.date} -> ${dateStr} | 原因:${reason}`);
     }
     node.date = dateStr; await saveGlobalTask(node); endWizard();
 }
@@ -727,18 +659,12 @@ function skipWizardStep(event) {
     if(event) event.stopPropagation();
     if (wizardState.step === 'OWNER') {
         wizardState.step = 'DATE'; $(".user-item").removeClass("highlight-wizard");
-        $("#wizardTipText").html(`👉 <b>二: 定时</b> 请在下方选取日期。`);
-        $(".calendar-day:not(.empty)").addClass("highlight-wizard");
+        $("#wizardTipText").html(`👉 <b>二: 定时</b> 请在下方选取日期。`); $(".calendar-day:not(.empty)").addClass("highlight-wizard");
         document.getElementById('timeWindow').scrollIntoView({behavior: 'smooth', block: 'center'});
     } else if (wizardState.step === 'DATE') endWizard();
 }
 function handleGlobalRightClick(e) { if (wizardState.step) { e.preventDefault(); skipWizardStep(); } }
-function endWizard() {
-    wizardState.activeNodeId = null; wizardState.step = null;
-    $("#wizardTipBar").fadeOut(200);
-    $(".user-item, .calendar-day").removeClass("highlight-wizard"); $(".node-main").removeClass("active-focus");
-    renderTaskTree();
-}
+function endWizard() { wizardState.activeNodeId = null; wizardState.step = null; $("#wizardTipBar").fadeOut(200); $(".user-item, .calendar-day").removeClass("highlight-wizard"); $(".node-main").removeClass("active-focus"); renderTaskTree(); }
 
 function initCalendar() {
     const box = document.getElementById("calendarWrapper"); box.innerHTML = "";
@@ -765,27 +691,19 @@ function updateNodeContent(id, val) { let node = displayTasks.find(t => t.id ===
 function updateNodeRemark(id, val) { let node = displayTasks.find(t => t.id === id); if (node) { node.remark = val; saveGlobalTask(node); } }
 function updateNodeStatus(id, val) {
     let node = displayTasks.find(t => t.id === id);
-    if (node) {
-        node.status = val;
-        if(val.includes("完成") && !node.actualDate) { let t=new Date(); node.actualDate=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`; }
-        else if(!val.includes("完成")) node.actualDate = "";
-        saveGlobalTask(node);
-    }
+    if (node) { node.status = val; if(val.includes("完成") && !node.actualDate) { let t=new Date(); node.actualDate=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`; } else if(!val.includes("完成")) node.actualDate = ""; saveGlobalTask(node); }
 }
 function toggleNodeCollapse(id, e) { e.stopPropagation(); let node = displayTasks.find(t => t.id === id); if (node) { node.isCollapsed = !node.isCollapsed; renderTaskTree(); } }
 async function addTreeRoot(type) {
     if (type !== '周任务' && currentUser.role === 'member') { alert("组员只能添加周任务"); return; }
     let newId = String(Date.now());
     let newTask = { id: newId, pid: null, type: type, content: "新任务", owner: "", creatorId: currentUser.id, date: "", status: "进行中", remark: "", actualDate: "", isCollapsed: false, history: [] };
-    await distributeNewTask(newTask);
-    startTaskWizard(newId, {stopPropagation:()=>{}}); autoFocusInput(newId);
+    await distributeNewTask(newTask); startTaskWizard(newId, {stopPropagation:()=>{}}); autoFocusInput(newId);
 }
-function deleteNode(id, e) { e.stopPropagation(); if(confirm("⚠️ 确定要删除该任务及子任务吗？")) executeDelete(id); }
 
 /* ================= 仪表盘统计 ================= */
 function renderDashboard() {
     const grid = document.getElementById("statGridBox"); grid.innerHTML = "";
-    
     let allPool = new Map();
     userList.forEach(u => { let d = globalTaskData[u.id]; if(d) { (d.l1||[]).forEach(t=>allPool.set(t.id,t)); (d.l2||[]).forEach(t=>allPool.set(t.id,t)); (d.week||[]).forEach(t=>allPool.set(t.id,t)); } });
     let allTasksArr = Array.from(allPool.values());
@@ -832,15 +750,10 @@ function renderDashboard() {
 function createStatCard(user, allTasks) {
     let uTasks = allTasks.filter(t => t.owner === user.name);
     let t1 = uTasks.filter(t=>t.type==="一级时间节点"); let t2 = uTasks.filter(t=>t.type==="二级时间节点"); let t3 = uTasks.filter(t=>t.type==="周任务");
-    function p(list){
-        if(!list||list.length===0)return "100%";
-        const delayed = list.filter(x=>x.status==="延期未完成" || x.status==="延期完成").length;
-        return Math.round((1 - delayed/list.length)*100)+"%";
-    }
+    function p(list){ if(!list||list.length===0)return "100%"; const delayed = list.filter(x=>x.status==="延期未完成" || x.status==="延期完成").length; return Math.round((1 - delayed/list.length)*100)+"%"; }
     const d=document.createElement("div");d.className="stat-card";
     const rName = roleText[user.role] || user.role;
-    d.innerHTML=`<h4><b>${user.name}</b> (${rName})</h4>
-    <div class="stat-row">一级任务：${p(t1)}</div><div class="stat-row">二级任务：${p(t2)}</div><div class="stat-row">周任务：${p(t3)}</div>`;
+    d.innerHTML=`<h4><b>${user.name}</b> (${rName})</h4><div class="stat-row">一级：${p(t1)}</div><div class="stat-row">二级：${p(t2)}</div><div class="stat-row">周任务：${p(t3)}</div>`;
     return d;
 }
 
@@ -849,8 +762,7 @@ function openMindMapModal(rootId) {
     let allPool = new Map();
     userList.forEach(u => { let d=globalTaskData[u.id]; if(d) { (d.l1||[]).forEach(t=>allPool.set(t.id,t)); (d.l2||[]).forEach(t=>allPool.set(t.id,t)); (d.week||[]).forEach(t=>allPool.set(t.id,t)); }});
     let allArr = Array.from(allPool.values());
-    let rootNode = allArr.find(t => t.id === rootId);
-    if (!rootNode) return;
+    let rootNode = allArr.find(t => t.id === rootId); if (!rootNode) return;
     
     document.getElementById("modalTitle").innerText = `🔍 任务溯源 — [${rootNode.content}]`;
     const box = document.getElementById("modalTreeContent"); box.innerHTML = "";
@@ -860,8 +772,8 @@ function openMindMapModal(rootId) {
         let statusClass = "status-none";
         if(node.status==="进行中") statusClass="status-ongoing"; else if(node.status==="按时完成") statusClass="status-ontime"; else if(node.status==="延期未完成") statusClass="status-overdue-no"; else if(node.status==="延期完成") statusClass="status-overdue-ok";
         d.innerHTML = `
-            <div class="node-main ${statusClass}" style="min-width:240px; border-style:dashed;">
-                <div class="node-title-box"><span class="node-prefix">${getPrefix(node.type)}</span><span style="font-size:14px; font-weight:bold; margin-left:4px;">${node.content}</span></div>
+            <div class="node-main ${statusClass}" style="min-width:180px;">
+                <div class="node-title-box"><span class="node-prefix">${getPrefix(node.type)}</span><span style="font-size:12px; font-weight:bold; margin-left:4px;">${node.content}</span></div>
                 <div class="node-meta">归属:${node.owner||'-'} | 计划:${node.date||'-'} | 状态:${node.status}</div>
             </div>`;
         let children = allArr.filter(t => t.pid === node.id);
@@ -891,26 +803,20 @@ async function saveNewUser() {
 }
 function openEditUserModal(id) {
     const u=userList.find(x=>x.id==id); if(!u) return;
-    document.getElementById("editUserId").value=u.id; document.getElementById("editUserName").value=u.name;
-    document.getElementById("editUserGroup").value=u.group;
-    let s=document.getElementById("editUserRole"); s.innerHTML="";
-    let allow=[];
+    document.getElementById("editUserId").value=u.id; document.getElementById("editUserName").value=u.name; document.getElementById("editUserGroup").value=u.group;
+    let s=document.getElementById("editUserRole"); s.innerHTML=""; let allow=[];
     if(currentUser.role==="cto")allow.push("hw_manager","sw_manager","mech_manager","manager","leader","member");
-    if(isManager())allow.push("leader","member");
-    if(currentUser.role==="leader")allow.push("member");
+    if(isManager())allow.push("leader","member"); if(currentUser.role==="leader")allow.push("member");
     allow.forEach(r=>{s.innerHTML+=`<option value="${r}" ${r===u.role?"selected":""}>${roleText[r]||r}</option>`;});
     document.getElementById("editUserModal").style.display="flex";
 }
 async function saveEditUser() {
     const id=document.getElementById("editUserId").value; const n=document.getElementById("editUserName").value.trim(); const r=document.getElementById("editUserRole").value; const g=document.getElementById("editUserGroup").value.trim();
-    if(!n) return;
-    const res=await post("/user/edit",{id,name:n,role:r,group:g});
+    if(!n) return; const res=await post("/user/edit",{id,name:n,role:r,group:g});
     if(res.ok){ closeModal("editUserModal"); await loadSystemData(); refreshUI(); } else alert(res.msg);
 }
 async function deleteUser(id) { if(confirm("确定删除？")) { const res=await post("/user/delete",{id}); if(res.ok){ await loadSystemData(); refreshUI(); } } }
 
-/* ================= 辅助模块 ================= */
-function exportExcel() { alert('请引入原有导出代码功能'); }
 function openEditPwd() { document.getElementById("oldPwd").value=""; document.getElementById("newPwd").value=""; document.getElementById("confirmPwd").value=""; document.getElementById("editPwdModal").style.display="flex"; }
 async function saveMyPwd() {
     const o=document.getElementById("oldPwd").value; const n=document.getElementById("newPwd").value; const c=document.getElementById("confirmPwd").value;
@@ -918,11 +824,7 @@ async function saveMyPwd() {
     await post("/user/update-pwd",{id:currentUser.id,pwd:btoa(n)}); closeModal("editPwdModal"); alert("成功，请重登录"); logout();
 }
 
-window.onload = async function() {
-    await loadSystemData();
-    initCalendar();
-    refreshUI();
-};
+window.onload = async function() { await loadSystemData(); initCalendar(); refreshUI(); };
 </script>
 </body>
 </html>
