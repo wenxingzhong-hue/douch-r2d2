@@ -339,10 +339,17 @@ function canEditOrDeleteUser(target) { return currentUser && target.id !== 1 && 
 function canEditContentAndDate(task) {
     if(!currentUser) return false;
     if(currentUser.role === 'cto') return true;
-    if(task.creatorId == currentUser.id) return true; // 组员自己创建的也可以修改
-    if(isSuperiorOrSelf(currentUser.id, task.creatorId)) return true; // 上级可以修改
-    return false;
+    
+    // 组员权限控制：严格限制只能编辑自己创建的任务
+    if(currentUser.role === 'member') {
+        return task.creatorId == currentUser.id;
+    }
+    
+    // 管理层或组长，可以修改自己创建的或下属的任务
+    return isSuperiorOrSelf(currentUser.id, task.creatorId);
 }
+
+
 function canEditStatusAndRemark(task) {
     if(!currentUser) return false;
     if(canEditContentAndDate(task)) return true;
@@ -531,23 +538,19 @@ function renderUserList() {
 
 function refreshDisplayTasks() {
     if(!currentUser || !viewUid) return;
-    let viewer = userList.find(u => u.id == viewUid);
-    let scopeIds = [viewer.id, ...getSubordinates(viewer.id)];
     
-    let uData = globalTaskData[viewer.id] || {l1:[], l2:[], week:[]};
-    let raw = [...uData.l1, ...uData.l2, ...uData.week];
-    
-    let sortedRaw = raw.sort((a,b) => allTasksArr.findIndex(x=>x.id===a.id) - allTasksArr.findIndex(x=>x.id===b.id));
-
-    window.displayTasks = sortedRaw.filter(t => {
-        if (t.type !== '周任务') return true; 
-        if (viewUid === currentUser.id) {
-            let isMyWeek = (t.owner || '').trim() === currentUser.name;
-            let isAssignedByMe = t.creatorId == currentUser.id;
-            return isMyWeek || isAssignedByMe;
-        } else {
-            return (t.owner || '').trim() === viewer.name;
+    // 强制基于 allTasksArr (唯一数据源) 进行全局权限过滤
+    window.displayTasks = allTasksArr.filter(t => {
+        const isOwner = (t.owner || '').trim() === (userList.find(u=>u.id==viewUid)||{}).name;
+        const isCreator = t.creatorId == viewUid;
+        
+        // 如果是 CTO 或各级经理，默认可见全部任务
+        if (["cto", "hw_manager", "sw_manager", "mech_manager", "manager"].includes(currentUser.role)) {
+            return true;
         }
+        
+        // 组长和组员仅可见自己作为归属人，或自己创建的任务
+        return isOwner || isCreator;
     });
 }
 
@@ -792,7 +795,19 @@ function updateNodeStatus(id, val) {
     let node = allTasksArr.find(t => t.id === id);
     if (node) { node.status = val; if(val.includes("完成") && !node.actualDate) { let t=new Date(); node.actualDate=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`; } else if(!val.includes("完成")) node.actualDate = ""; fullSyncToBackend().then(()=>{refreshDisplayTasks(); renderTaskTree();}); }
 }
-function toggleNodeCollapse(id, e) { e.stopPropagation(); let node = allTasksArr.find(t => t.id === id); if (node) { node.isCollapsed = !node.isCollapsed; fullSyncToBackend().then(()=>{refreshDisplayTasks(); renderTaskTree();}); } }
+
+function toggleNodeCollapse(id, e) {
+    if(e) e.stopPropagation();
+    let node = allTasksArr.find(t => t.id === id);
+    if (node) {
+        node.isCollapsed = !node.isCollapsed;
+        // 强制同步到后台，随后全量触发 UI 重绘
+        fullSyncToBackend().then(() => {
+            refreshDisplayTasks();
+            renderTaskTree();
+        });
+    }
+}
 
 async function addTreeRoot(type) {
     if (type !== '周任务' && currentUser.role === 'member') { alert("⚠️ 权限限制：组员无法创建一级任务。"); return; }
