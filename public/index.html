@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>团队任务管理系统 V3.6 全局同步版</title>
+    <title>团队任务管理系统 V3.7 终极稳定版</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -25,10 +25,11 @@
         .btn-group { display:flex; gap:8px; align-items: center; }
         .btn-group button { padding:6px 10px; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold; background:#2b7cc7; color:white; }
 
-        /* 统计与汇总区 */
+        /* 统计与汇总区 (采用等宽 Grid 布局) */
         .dashboard { background:#fff; padding:15px; border-radius:8px; margin-bottom:15px; box-shadow:0 1px 6px #00000008; }
         .dashboard h3 { color:#2b7cc7; margin-bottom:10px; font-size: 16px;}
         .group-title { font-size:14px; font-weight:bold; color:#2b7cc7; margin:10px 0 8px; }
+        
         .group-row { display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap:12px; margin-bottom:12px; }
         .stat-card { border:1px solid #eee; padding:10px; border-radius:6px; background:#fafbfc; display: flex; flex-direction: column; justify-content: space-between;}
         .stat-card h4 { margin-bottom:6px; color:#333; font-size:13px; border-bottom:1px solid #eee; padding-bottom:4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
@@ -42,7 +43,7 @@
         tr.clickable-row:hover { background: #f0f5ff; }
         td.overdue{color:#f56c6c;font-weight:bold;}
 
-        /* 核心工作区 */
+        /* 核心工作区 (高度扩容 30% 到 720px) */
         .workspace { display: grid; grid-template-columns: 80% 18%; gap: 2%; margin-bottom: 10px; }
         .window-box { background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); display: flex; flex-direction: column; height: 720px; }
         .window-title { font-size: 14px; font-weight: bold; color: #2b7cc7; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px;}
@@ -75,13 +76,11 @@
         .view-radial .tree-children > .tree-node:first-child:last-child::after { display: none; }
         .view-radial .tree-node::before { border-top: none; }
 
-        /* 卡片设计与精准拖拽提示 */
-        .node-main { display: inline-flex; flex-direction: column; padding: 4px 6px; border-radius: 4px; border: 1px solid #d9d9d9; min-width: 170px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); position: relative; cursor: pointer; background: var(--status-none); vertical-align: top; z-index: 2; transition: transform 0.1s;}
+        /* 卡片极简设计 */
+        .node-main { display: inline-flex; flex-direction: column; padding: 4px 6px; border-radius: 4px; border: 1px solid #d9d9d9; min-width: 170px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); position: relative; cursor: pointer; background: var(--status-none); vertical-align: top; z-index: 2; transition: all 0.2s;}
         .node-main.active-focus { outline: 2px solid #1890ff; box-shadow: 0 0 6px rgba(24,144,255,0.6); }
         .node-main.readonly-card { border-style: dashed; }
-        
-        .drag-over-top { border-top: 3px solid #1890ff !important; background: #e6f7ff !important; transform: scale(1.02); }
-        .drag-over-bottom { border-bottom: 3px solid #1890ff !important; background: #e6f7ff !important; transform: scale(1.02); }
+        .node-main.drag-over { border: 2px dashed #1890ff !important; background: #e6f7ff !important; transform: scale(1.02); }
         
         .status-ongoing { background-color: var(--status-ongoing) !important; }
         .status-ontime { background-color: var(--status-ontime) !important; }
@@ -101,7 +100,7 @@
         .node-remark[contenteditable="true"]:empty::before { content: "(添加备注)"; color: #aaa; pointer-events: none; }
         .node-history { font-size: 9px; color: #c09853; margin-top: 4px; line-height: 1.3; border-top: 1px dotted #eaddc5; padding-top: 3px;}
 
-        /* 加减号及删除按钮 */
+        /* 加减号与删除按钮 */
         .toggle-btn { position: absolute; width: 14px; height: 14px; background: #fff; border: 1px solid #aaa; border-radius: 50%; text-align: center; line-height: 12px; font-size: 11px; cursor: pointer; z-index: 10; font-weight: bold; color: #555;}
         .view-outline .toggle-btn { left: -7px; top: -7px; }
         .view-radial .toggle-btn { right: -18px; top: 50%; transform: translateY(-50%); }
@@ -110,7 +109,7 @@
         .node-main:hover .del-node-btn { display: block; }
         .del-node-btn:hover { color: #e53e3e; font-weight: bold; }
         
-        /* 人员与日历 */
+        /* 人员名单区 */
         .user-list { overflow-y: auto; flex: 1; list-style: none; }
         .user-item { padding: 8px; border-bottom: 1px solid #f0f2f5; cursor: pointer; border-radius: 4px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items:center; font-size: 12px;}
         .user-item:hover { background: #e6f7ff; }
@@ -118,6 +117,7 @@
         .user-actions span { display: none; }
         .user-item:hover .user-actions span { display: inline; }
 
+        /* 时间日历 */
         .time-window { background: white; border-radius: 8px; padding: 8px 12px; box-shadow: 0 -2px 10px rgba(0,0,0,0.08); margin-bottom: 10px; height: auto; min-height: 140px;}
         .calendar-wrapper { display: flex; gap: 10px; overflow-x: auto; scroll-behavior: smooth; padding-bottom: 2px; height: auto;}
         .calendar-month { border: 1px solid #e8e8e8; border-radius: 4px; min-width: 190px; flex: 0 0 auto; background: #fff; padding: 4px; }
@@ -148,11 +148,11 @@
 
 <div class="wizard-tip" id="wizardTipBar">
     <span id="wizardTipText">提示信息</span>
-    <button class="wizard-skip-btn" onclick="skipWizardStep(event)">右键或点此跳过</button>
+    <button class="wizard-skip-btn" onclick="skipWizardStep(event)">右键或点击此处跳过</button>
 </div>
 
 <div class="top-bar">
-    <h2>团队任务管理系统 V3.6</h2>
+    <h2>团队任务管理系统 V3.7</h2>
     <div class="btn-group">
         <span id="currentUserInfo" style="font-size: 13px; color:#555;">未登录</span>
         <button id="loginTriggerBtn" onclick="openLoginModal()">登录系统</button>
@@ -283,6 +283,7 @@ let currentUser = null;
 let viewUid = null; 
 let globalTaskData = {}; 
 let allTasksArr = []; // 核心：全局平铺数组，记录绝对顺序和唯一数据
+let displayTasks = []; // 过滤后用于渲染显示的数组
 
 const roleLevel = { cto: 4, hw_manager: 3, sw_manager: 3, mech_manager: 3, manager: 3, leader: 2, member: 1 };
 const roleText = { cto:"CTO", hw_manager:"硬件经理", sw_manager:"软件经理", mech_manager:"结构经理", manager:"经理", leader:"组长", member:"组员" };
@@ -338,16 +339,16 @@ function canEditOrDeleteUser(target) { return currentUser && target.id !== 1 && 
 function canEditContentAndDate(task) {
     if(!currentUser) return false;
     if(currentUser.role === 'cto') return true;
-    if(task.creatorId == currentUser.id) return true;
-    if(getSuperiors(task.creatorId).includes(currentUser.id)) return true;
+    if(task.creatorId == currentUser.id) return true; // 组员自己创建的也可以修改
+    if(isSuperiorOrSelf(currentUser.id, task.creatorId)) return true; // 上级可以修改
     return false;
 }
 function canEditStatusAndRemark(task) {
     if(!currentUser) return false;
     if(canEditContentAndDate(task)) return true;
-    if((task.owner||'').trim() === currentUser.name) return true;
+    if((task.owner||'').trim() === currentUser.name) return true; // 归属人可以修改状态
     let ownerId = (userList.find(u => u.name === (task.owner||'').trim()) || {}).id;
-    if(ownerId && getSuperiors(ownerId).includes(currentUser.id)) return true;
+    if(ownerId && isSuperiorOrSelf(currentUser.id, ownerId)) return true;
     return false;
 }
 
@@ -398,7 +399,7 @@ async function fullSyncToBackend() {
         let involved = calcTreeInvolvedUids(root.id);
         let treeNodes = [root, ...getTreeDescendants(root.id)];
         
-        // 保证保存时按 allTasksArr 的新顺序写入
+        // 保障写入顺序与数组严格一致
         treeNodes.sort((a,b) => allTasksArr.indexOf(a) - allTasksArr.indexOf(b));
 
         for(let uid of involved) {
@@ -438,7 +439,6 @@ function adaptOldData() {
     });
     buildAllTasksArr();
 
-    // 智能挂载孤立周任务和二级任务
     allTasksArr.forEach(t => {
         if (!t.pid && t.parent) {
             let mL1 = allTasksArr.find(x => x.type==='一级时间节点' && x.content === t.parent);
@@ -459,7 +459,7 @@ function adaptOldData() {
         }
     });
 
-    if(modified) fullSyncToBackend(); // 如果发现老数据，主动洗档洗存一次
+    if(modified) fullSyncToBackend(); 
 }
 
 /* ================= 登录与初始化 ================= */
@@ -537,10 +537,7 @@ function refreshDisplayTasks() {
     let uData = globalTaskData[viewer.id] || {l1:[], l2:[], week:[]};
     let raw = [...uData.l1, ...uData.l2, ...uData.week];
     
-    // 按全局真理数组的顺序严格排列，保障拖拽视觉一致
-    let sortedRaw = raw.sort((a,b) => {
-        return allTasksArr.findIndex(x=>x.id===a.id) - allTasksArr.findIndex(x=>x.id===b.id);
-    });
+    let sortedRaw = raw.sort((a,b) => allTasksArr.findIndex(x=>x.id===a.id) - allTasksArr.findIndex(x=>x.id===b.id));
 
     window.displayTasks = sortedRaw.filter(t => {
         if (t.type !== '周任务') return true; 
@@ -576,15 +573,14 @@ async function dropNode(e, targetId, el) {
     if (dn.type === '周任务' && tn.type === '一级时间节点') { dn.type = '二级时间节点'; dn.pid = tn.id; } 
     else if (dn.type === '二级时间节点' && tn.type === '一级时间节点') { dn.pid = tn.id; } 
     else if (dn.type === '周任务' && tn.type === '二级时间节点') { dn.pid = tn.id; } 
-    else if (dn.type === tn.type && dn.pid === tn.pid) { /* 同级换位，pid不变 */ } 
+    else if (dn.type === tn.type && dn.pid === tn.pid) { /* 同级换位无事发生 */ } 
     else { alert("非法的跨级拖拽路径"); return; }
     
-    // 数组深切重排
     let dNodes = [dn, ...getTreeDescendants(dn.id)];
-    allTasksArr = allTasksArr.filter(t => !dNodes.find(x => x.id === t.id)); // 拔出
+    allTasksArr = allTasksArr.filter(t => !dNodes.find(x => x.id === t.id)); 
     
     let tIndex = allTasksArr.findIndex(t => t.id === tn.id);
-    if(tIndex === -1) { allTasksArr.push(...dNodes); } // fallback
+    if(tIndex === -1) { allTasksArr.push(...dNodes); } 
     else {
         if (isAbove) { allTasksArr.splice(tIndex, 0, ...dNodes); } 
         else {
@@ -599,12 +595,33 @@ async function dropNode(e, targetId, el) {
 }
 
 /* ================= 纯净键盘流 ================= */
+function hideWizardUI() {
+    wizardState.step = null;
+    $("#wizardTipBar").hide();
+    document.getElementById("timeWindow").classList.add('hide');
+    $(".user-item, .calendar-day").removeClass("highlight-wizard");
+}
+function endWizardWithoutRender() {
+    hideWizardUI();
+    wizardState.activeNodeId = null;
+    $(".node-main").removeClass("active-focus");
+}
 function autoFocusInput(id) { setTimeout(() => { let i = $(`#node_wrap_${id}`).find('.node-content-input')[0]; if(i) { i.focus(); i.select(); } }, 50); }
 
-function endWizardWithoutRender() {
-    wizardState.activeNodeId = null; wizardState.step = null;
-    $("#wizardTipBar").hide(); document.getElementById("timeWindow").classList.add('hide');
-    $(".user-item, .calendar-day").removeClass("highlight-wizard"); $(".node-main").removeClass("active-focus");
+async function executeDelete(id) {
+    let idsToDelete = [id];
+    function collect(pid) { allTasksArr.filter(t=>t.pid===pid).forEach(c=>{ idsToDelete.push(c.id); collect(c.id); }); }
+    collect(id);
+    allTasksArr = allTasksArr.filter(t => !idsToDelete.includes(t.id));
+    await fullSyncToBackend();
+    if(idsToDelete.includes(wizardState.activeNodeId)) endWizardWithoutRender();
+    refreshDisplayTasks(); renderTaskTree();
+}
+function deleteNodeSafe(id, e) {
+    if(e) { e.preventDefault(); e.stopPropagation(); }
+    let node = allTasksArr.find(t=>t.id===id);
+    if(!node || !canEditContentAndDate(node)) { alert("⚠️ 权限不足：您无权删除该任务。"); return; }
+    setTimeout(() => { if(confirm("⚠️ 确定要删除该任务及附带的子任务吗？")) executeDelete(id); }, 10);
 }
 
 $(document).on("keydown", function(e) {
@@ -614,41 +631,75 @@ $(document).on("keydown", function(e) {
     let isContentEditable = document.activeElement ? document.activeElement.isContentEditable : false;
     let isInput = activeTag === 'input' || activeTag === 'textarea' || isContentEditable;
 
+    // Delete 快捷键全网删除
     if (e.key === "Delete" && !isInput) {
-        e.preventDefault(); deleteNodeSafe(wizardState.activeNodeId, null); return;
+        e.preventDefault(); 
+        let node = allTasksArr.find(t => t.id === wizardState.activeNodeId);
+        if(node && canEditContentAndDate(node)) { deleteNodeSafe(wizardState.activeNodeId, null); } 
+        else { alert("⚠️ 权限不足：您无权删除该任务。"); }
+        return;
     }
 
-    if (!isInput || $(e.target).hasClass("node-content-input")) {
+    let isTitleInput = $(e.target).hasClass("node-content-input");
+    if (!isInput || isTitleInput) {
         let curr = displayTasks.find(t => t.id === wizardState.activeNodeId);
         if (!curr || (curr.type !== '周任务' && currentUser.role === 'member')) return;
 
         if (e.key === "Enter") {
-            e.preventDefault(); endWizardWithoutRender(); 
+            e.preventDefault(); 
+            if (curr.type === '一级时间节点' && currentUser.role === 'member') { alert("⚠️ 权限限制：组员无法创建一级任务。"); return; }
+            hideWizardUI();
             let nId = String(Date.now());
             let nSib = { id: nId, pid: curr.pid, type: curr.type, content: "新任务", owner: "", creatorId: currentUser.id, date: "", status: "进行中", remark: "", actualDate: "", isCollapsed: false, history: [] };
-            allTasksArr.push(nSib); 
-            fullSyncToBackend().then(()=>{ refreshDisplayTasks(); wizardState.activeNodeId = nId; renderTaskTree(); autoFocusInput(nId); });
+            
+            let insertIdx = allTasksArr.indexOf(curr);
+            let descendants = getTreeDescendants(curr.id);
+            if(descendants.length > 0) { let lastD = descendants[descendants.length-1]; insertIdx = allTasksArr.indexOf(lastD); }
+            allTasksArr.splice(insertIdx + 1, 0, nSib);
+
+            fullSyncToBackend().then(()=>{
+                refreshDisplayTasks(); renderTaskTree();
+                wizardState.activeNodeId = nId;
+                $(".node-main").removeClass("active-focus"); $(`#node_wrap_${nId} > .node-main`).addClass("active-focus");
+                autoFocusInput(nId);
+            });
         } 
         else if (e.key === "Tab") {
             e.preventDefault();
             if (curr.type === "周任务") { alert("⚠️ 周任务为底层节点，无法继续向下拆分。"); return; }
-            endWizardWithoutRender();
+            hideWizardUI();
             let nId = String(Date.now()); let subType = curr.type === "一级时间节点" ? "二级时间节点" : "周任务";
             let nChild = { id: nId, pid: curr.id, type: subType, content: "新任务", owner: "", creatorId: currentUser.id, date: "", status: "进行中", remark: "", actualDate: "", isCollapsed: false, history:[] };
-            curr.isCollapsed = false; allTasksArr.push(nChild); 
-            fullSyncToBackend().then(()=>{ refreshDisplayTasks(); wizardState.activeNodeId = nId; renderTaskTree(); autoFocusInput(nId); });
+            
+            curr.isCollapsed = false;
+            let insertIdx = allTasksArr.indexOf(curr);
+            allTasksArr.splice(insertIdx + 1, 0, nChild);
+
+            fullSyncToBackend().then(()=>{
+                refreshDisplayTasks(); renderTaskTree();
+                wizardState.activeNodeId = nId;
+                $(".node-main").removeClass("active-focus"); $(`#node_wrap_${nId} > .node-main`).addClass("active-focus");
+                autoFocusInput(nId);
+            });
         }
     }
 });
 
 /* ================= 交互向导 ================= */
 function startTaskWizard(nodeId, event) {
-    event.stopPropagation(); let node = displayTasks.find(t => t.id === nodeId); if(!node || !canEditStatusAndRemark(node)) return;
-    wizardState.activeNodeId = nodeId; wizardState.step = 'OWNER';
+    event.stopPropagation(); let node = allTasksArr.find(t => t.id === nodeId); if(!node) return;
+    
+    wizardState.activeNodeId = nodeId;
     $(".node-main").removeClass("active-focus"); $(`#node_wrap_${nodeId} > .node-main`).addClass("active-focus");
-    $("#wizardTipBar").fadeIn(200); $("#wizardTipText").html(`👉 <b>一: 选人</b> 请在右侧名单左键指派归属人。`); $(".user-item").addClass("highlight-wizard");
-    document.getElementById("timeWindow").classList.remove('hide');
+
+    if (canEditContentAndDate(node)) {
+        wizardState.step = 'OWNER';
+        $("#wizardTipBar").fadeIn(200); $("#wizardTipText").html(`👉 <b>一: 选人</b> 请在右侧名单左键指派归属人。`);
+        $(".user-item").addClass("highlight-wizard");
+        document.getElementById("timeWindow").classList.remove('hide');
+    } else { hideWizardUI(); }
 }
+
 function handleUserSelect(userName) {
     if (wizardState.step !== 'OWNER') return;
     let node = allTasksArr.find(t => t.id === wizardState.activeNodeId); if (node) { node.owner = userName; fullSyncToBackend(); }
@@ -675,12 +726,6 @@ function skipWizardStep(event) {
 }
 function handleGlobalRightClick(e) { if (wizardState.step) { e.preventDefault(); skipWizardStep(); } }
 
-function deleteNodeSafe(id, e) {
-    if(e) { e.preventDefault(); e.stopPropagation(); }
-    let node = displayTasks.find(t=>t.id===id); if(!node || !canEditContentAndDate(node)) return;
-    setTimeout(() => { if(confirm("⚠️ 确定要删除该任务及附带的子任务吗？")) executeDelete(id); }, 10);
-}
-
 /* ================= 树状图渲染 ================= */
 function switchTreeViewMode(mode) {
     currentViewMode = mode; $(".view-btns button").removeClass("active");
@@ -700,8 +745,10 @@ function renderTaskTree() {
 }
 
 window.activateNodeOnly = function(nodeId) {
-    wizardState.activeNodeId = nodeId; endWizardWithoutRender();
-    $(".node-main").removeClass("active-focus"); $(`#node_wrap_${nodeId} > .node-main`).addClass("active-focus");
+    if(wizardState.activeNodeId !== nodeId) {
+        wizardState.activeNodeId = nodeId; hideWizardUI();
+        $(".node-main").removeClass("active-focus"); $(`#node_wrap_${nodeId} > .node-main`).addClass("active-focus");
+    }
 };
 
 function buildTreeNodeDOM(node) {
@@ -739,41 +786,19 @@ function buildTreeNodeDOM(node) {
     return div;
 }
 
-function updateNodeContent(id, val) { let node = allTasksArr.find(t => t.id === id); if (node) { node.content = val; fullSyncToBackend(); } }
-function updateNodeRemark(id, val) { let node = allTasksArr.find(t => t.id === id); if (node) { node.remark = val; fullSyncToBackend(); } }
+function updateNodeContent(id, val) { let node = allTasksArr.find(t => t.id === id); if (node) { node.content = val; fullSyncToBackend().then(()=>refreshDisplayTasks()); } }
+function updateNodeRemark(id, val) { let node = allTasksArr.find(t => t.id === id); if (node) { node.remark = val; fullSyncToBackend().then(()=>refreshDisplayTasks()); } }
 function updateNodeStatus(id, val) {
     let node = allTasksArr.find(t => t.id === id);
-    if (node) { node.status = val; if(val.includes("完成") && !node.actualDate) { let t=new Date(); node.actualDate=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`; } else if(!val.includes("完成")) node.actualDate = ""; fullSyncToBackend(); }
+    if (node) { node.status = val; if(val.includes("完成") && !node.actualDate) { let t=new Date(); node.actualDate=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`; } else if(!val.includes("完成")) node.actualDate = ""; fullSyncToBackend().then(()=>{refreshDisplayTasks(); renderTaskTree();}); }
 }
-function toggleNodeCollapse(id, e) { e.stopPropagation(); let node = allTasksArr.find(t => t.id === id); if (node) { node.isCollapsed = !node.isCollapsed; fullSyncToBackend(); } }
+function toggleNodeCollapse(id, e) { e.stopPropagation(); let node = allTasksArr.find(t => t.id === id); if (node) { node.isCollapsed = !node.isCollapsed; fullSyncToBackend().then(()=>{refreshDisplayTasks(); renderTaskTree();}); } }
+
 async function addTreeRoot(type) {
-    if (type !== '周任务' && currentUser.role === 'member') { alert("组员只能添加周任务"); return; }
-    endWizardWithoutRender();
-    let newId = String(Date.now());
+    if (type !== '周任务' && currentUser.role === 'member') { alert("⚠️ 权限限制：组员无法创建一级任务。"); return; }
+    hideWizardUI(); let newId = String(Date.now());
     let newTask = { id: newId, pid: null, type: type, content: "新任务", owner: "", creatorId: currentUser.id, date: "", status: "进行中", remark: "", actualDate: "", isCollapsed: false, history: [] };
     allTasksArr.push(newTask); await fullSyncToBackend(); refreshDisplayTasks(); wizardState.activeNodeId = newId; renderTaskTree(); autoFocusInput(newId); 
-}
-
-/* ================= 历法生成 ================= */
-function initCalendar() {
-    const box = document.getElementById("calendarWrapper"); box.innerHTML = "";
-    let baseDate = new Date(); baseDate.setMonth(baseDate.getMonth() - 1); baseDate.setDate(1); 
-    for (let m = 0; m < 12; m++) {
-        let workDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + m, 1);
-        let year = workDate.getFullYear(); let month = workDate.getMonth();
-        let monthDiv = document.createElement("div"); monthDiv.className = "calendar-month";
-        monthDiv.innerHTML = `<div class="calendar-month-title">${year}年${month + 1}月</div>`;
-        let grid = document.createElement("div"); grid.className = "calendar-grid";
-        ["日", "一", "二", "三", "四", "五", "六"].forEach(h => grid.innerHTML += `<div class="calendar-day-head">${h}</div>`);
-        let firstDayIndex = new Date(year, month, 1).getDay(); let totalDays = new Date(year, month + 1, 0).getDate();
-        for (let i = 0; i < firstDayIndex; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`; 
-        for (let d = 1; d <= totalDays; d++) {
-            let dayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            let t = new Date(); let isToday = (d===t.getDate() && month===t.getMonth() && year===t.getFullYear()) ? "today" : ""; 
-            grid.innerHTML += `<div class="calendar-day ${isToday}" data-date="${dayStr}" onclick="handleCalendarDayClick('${dayStr}')">${d}</div>`;
-        }
-        monthDiv.appendChild(grid); box.appendChild(monthDiv);
-    }
 }
 
 /* ================= 仪表盘统计 ================= */
@@ -831,8 +856,10 @@ function createStatCard(user, allTasks) {
 function openMindMapModal(rootId) {
     $("#mindMapModal").css("display", "flex");
     let rootNode = allTasksArr.find(t => t.id === rootId); if (!rootNode) return;
+    
     document.getElementById("modalTitle").innerText = `🔍 任务溯源 — [${rootNode.content}]`;
     const box = document.getElementById("modalTreeContent"); box.innerHTML = "";
+    
     function renderSub(node) {
         let d = document.createElement("div"); d.className = "tree-node";
         let statusClass = "status-none";
@@ -852,7 +879,29 @@ function openMindMapModal(rootId) {
     box.appendChild(renderSub(rootNode));
 }
 
-/* ================= 用户后台管理 ================= */
+// 初始化跨越1年的日期
+function initCalendar() {
+    const box = document.getElementById("calendarWrapper"); box.innerHTML = "";
+    let baseDate = new Date(); baseDate.setMonth(baseDate.getMonth() - 1); baseDate.setDate(1); 
+    for (let m = 0; m < 12; m++) {
+        let workDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + m, 1);
+        let year = workDate.getFullYear(); let month = workDate.getMonth();
+        let monthDiv = document.createElement("div"); monthDiv.className = "calendar-month";
+        monthDiv.innerHTML = `<div class="calendar-month-title">${year}年${month + 1}月</div>`;
+        let grid = document.createElement("div"); grid.className = "calendar-grid";
+        ["日", "一", "二", "三", "四", "五", "六"].forEach(h => grid.innerHTML += `<div class="calendar-day-head">${h}</div>`);
+        let firstDayIndex = new Date(year, month, 1).getDay(); let totalDays = new Date(year, month + 1, 0).getDate();
+        for (let i = 0; i < firstDayIndex; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`; 
+        for (let d = 1; d <= totalDays; d++) {
+            let dayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            let t = new Date(); let isToday = (d===t.getDate() && month===t.getMonth() && year===t.getFullYear()) ? "today" : ""; 
+            grid.innerHTML += `<div class="calendar-day ${isToday}" data-date="${dayStr}" onclick="handleCalendarDayClick('${dayStr}')">${d}</div>`;
+        }
+        monthDiv.appendChild(grid); box.appendChild(monthDiv);
+    }
+}
+
+/* ================= 后台管理弹窗 ================= */
 function openAddUserModal() {
     document.getElementById("newUserName").value="";
     let s=document.getElementById("newUserRole"); s.innerHTML="";
