@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>团队任务管理系统 V4.4 终极修复版</title>
+    <title>团队任务管理系统 V4.5 样式还原完美版</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -157,7 +157,7 @@
 </div>
 
 <div class="top-bar">
-    <h2>团队任务管理系统 V4.4</h2>
+    <h2>团队任务管理系统 V4.5</h2>
     <div class="btn-group">
         <span id="currentUserInfo" style="font-size: 13px; color:#555;">未登录</span>
         <button id="loginTriggerBtn" onclick="openLoginModal()">登录系统</button>
@@ -421,7 +421,6 @@ function isTreeVisibleTo(rootId, viewer) {
     return false;
 }
 
-// ⭐【终极防竞态条件修复】：强制串行向数据库同步数据，解决数据覆盖和刷新复原问题
 async function fullSyncToBackend() {
     allTasksArr.forEach((t, i) => t.sortIndex = i); // 注入绝对排序基因
 
@@ -460,7 +459,6 @@ async function fullSyncToBackend() {
         let newStr = JSON.stringify(newGlobal[u.id]);
         if (oldStr !== newStr) {
             globalTaskData[u.id] = JSON.parse(newStr);
-            // 必须阻塞等待上一个用户的记录保存完，再开始下一个
             await post("/task/save", {uid: u.id, data: globalTaskData[u.id]});
         }
     }
@@ -1025,7 +1023,7 @@ function openMindMapModal(rootId) {
     box.appendChild(renderSub(rootNode));
 }
 
-/* ================= 用户管理后台 ================= */
+/* ================= 嵌入式用户管理 ================= */
 function openAddUserModal() {
     document.getElementById("newUserName").value="";
     let s=document.getElementById("newUserRole"); s.innerHTML="";
