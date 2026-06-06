@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>团队任务管理系统 V4.3 终极持久化版</title>
+    <title>团队任务管理系统 V4.4 终极修复版</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -157,7 +157,7 @@
 </div>
 
 <div class="top-bar">
-    <h2>团队任务管理系统 V4.3</h2>
+    <h2>团队任务管理系统 V4.4</h2>
     <div class="btn-group">
         <span id="currentUserInfo" style="font-size: 13px; color:#555;">未登录</span>
         <button id="loginTriggerBtn" onclick="openLoginModal()">登录系统</button>
@@ -287,8 +287,8 @@ let userList = [];
 let currentUser = null;
 let viewUid = null; 
 let globalTaskData = {}; 
-let allTasksArr = []; 
-let displayTasks = []; 
+let allTasksArr = []; // 核心：全局平铺数组，记录绝对顺序和唯一数据
+let displayTasks = []; // 过滤后用于渲染显示的数组
 
 const roleLevel = { cto: 4, hw_manager: 3, sw_manager: 3, mech_manager: 3, manager: 3, leader: 2, member: 1 };
 const roleText = { cto:"CTO", hw_manager:"硬件经理", sw_manager:"软件经理", mech_manager:"结构经理", manager:"经理", leader:"组长", member:"组员" };
@@ -421,6 +421,7 @@ function isTreeVisibleTo(rootId, viewer) {
     return false;
 }
 
+// ⭐【终极防竞态条件修复】：强制串行向数据库同步数据，解决数据覆盖和刷新复原问题
 async function fullSyncToBackend() {
     allTasksArr.forEach((t, i) => t.sortIndex = i); // 注入绝对排序基因
 
@@ -453,16 +454,16 @@ async function fullSyncToBackend() {
         });
     });
 
-    let promises = [];
+    // 🚀【核心修复】：完全串行 Await 提交，彻底杜绝 Promise.all 引起的 Node.js Mongo 并发覆盖 BUG！
     for (let u of userList) {
         let oldStr = JSON.stringify(globalTaskData[u.id] || {l1:[], l2:[], week:[]});
         let newStr = JSON.stringify(newGlobal[u.id]);
         if (oldStr !== newStr) {
-            globalTaskData[u.id] = newGlobal[u.id];
-            promises.push(post("/task/save", {uid: u.id, data: globalTaskData[u.id]}));
+            globalTaskData[u.id] = JSON.parse(newStr);
+            // 必须阻塞等待上一个用户的记录保存完，再开始下一个
+            await post("/task/save", {uid: u.id, data: globalTaskData[u.id]});
         }
     }
-    await Promise.all(promises);
 }
 
 /* ================= 超时自动巡检 ================= */
@@ -681,7 +682,7 @@ function dropNode(e, targetId, el) {
         }
     }
     
-    // 乐观更新机制：立刻重绘，后台触发防抖，零延迟
+    // 乐观更新机制：立刻重绘，后台触发串行同步锁
     refreshDisplayTasks(); renderTaskTree(); triggerSync();
 }
 
@@ -775,7 +776,7 @@ function buildTreeNodeDOM(node) {
     return div;
 }
 
-/* ================= 乐观快速状态动作 ================= */
+/* ================= 纯粹快捷键与向导操控 ================= */
 function autoFocusInput(id) { setTimeout(() => { let i = $(`#node_wrap_${id}`).find('.node-content-input')[0]; if(i) { i.focus(); i.select(); } }, 50); }
 
 function executeDelete(id) {
@@ -790,7 +791,7 @@ function executeDelete(id) {
 function deleteNodeSafe(id, e) {
     if(e) { e.preventDefault(); e.stopPropagation(); }
     let node = allTasksArr.find(t=>t.id===id);
-    if(!node || !canEditFull(node)) { alert("⚠️ 权限拦截：您无权删除该任务。"); return; }
+    if(!node || !canEditFull(node)) { alert("⚠️ 权限拦截：您无权删除该指派任务。"); return; }
     setTimeout(() => { if(confirm("⚠️ 确定要彻底删除该任务及附带的子任务吗？")) executeDelete(id); }, 10);
 }
 
@@ -807,7 +808,7 @@ $(document).on("keydown", function(e) {
     let isTitleInput = $(e.target).hasClass("node-content-input");
     if (!isInput || isTitleInput) {
         let curr = displayTasks.find(t => t.id === wizardState.activeNodeId);
-        if (!curr || !canEditFull(curr)) return; 
+        if (!curr || !canEditFull(curr)) return; // 锁死，不能从别人的任务衍生新任务
 
         if (e.key === "Enter") {
             e.preventDefault(); 
@@ -1024,7 +1025,7 @@ function openMindMapModal(rootId) {
     box.appendChild(renderSub(rootNode));
 }
 
-/* ================= 嵌入式用户管理 ================= */
+/* ================= 用户管理后台 ================= */
 function openAddUserModal() {
     document.getElementById("newUserName").value="";
     let s=document.getElementById("newUserRole"); s.innerHTML="";
@@ -1061,13 +1062,13 @@ async function saveEditUser() {
     if(!n) return; const res=await post("/user/edit",{id,name:n,role:r,group:g});
     if(res.ok){ closeModal("editUserModal"); await loadSystemData(); refreshUI(); } else alert(res.msg);
 }
-async function deleteUser(id) { if(confirm("确定删除？")) { const res=await post("/user/delete",{id}); if(res.ok){ await loadSystemData(); refreshUI(); } } }
+async function deleteUser(id) { if(confirm("确定删除该成员？")) { const res=await post("/user/delete",{id}); if(res.ok){ await loadSystemData(); refreshUI(); } } }
 
 function openEditPwd() { document.getElementById("oldPwd").value=""; document.getElementById("newPwd").value=""; document.getElementById("confirmPwd").value=""; document.getElementById("editPwdModal").style.display="flex"; }
 async function saveMyPwd() {
     const o=document.getElementById("oldPwd").value; const n=document.getElementById("newPwd").value; const c=document.getElementById("confirmPwd").value;
     if(!o||!n||!c) return; if(n!==c) return; if(currentUser.pwd!==btoa(o)) return;
-    await post("/user/update-pwd",{id:currentUser.id,pwd:btoa(n)}); closeModal("editPwdModal"); alert("成功，请重登录"); logout();
+    await post("/user/update-pwd",{id:currentUser.id,pwd:btoa(n)}); closeModal("editPwdModal"); alert("成功，请重新登录"); logout();
 }
 
 window.onload = async function() { await loadSystemData(); initCalendar(); refreshUI(); };
