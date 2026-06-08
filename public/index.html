@@ -385,7 +385,7 @@ function canEditPartial(task) {
     return false;
 }
 
-/* ================= 业务数组重构 ================= */
+/* ================= 业务数组重构与孤儿清理 ================= */
 function buildAllTasksArr() {
     let map = new Map();
     userList.forEach(u => {
@@ -393,7 +393,23 @@ function buildAllTasksArr() {
         [...(d.l1||[]), ...(d.l2||[]), ...(d.week||[])].forEach(t => { if(!map.has(t.id)) map.set(t.id, t); });
     });
     allTasksArr = Array.from(map.values());
+    
+    // 【核心修复】：幽灵孤儿任务强制显形机制
+    // 如果一个子任务有 pid，但是它的父节点已经被删除，它在前端会隐身（不仅入总数）。
+    // 在这里将其 pid 强行剥离置空，它将回归独立任务面板显示！
+    let hasOrphans = false;
+    allTasksArr.forEach(t => {
+        if (t.pid) {
+            let parentExists = allTasksArr.some(p => p.id === t.pid);
+            if (!parentExists) {
+                t.pid = null; 
+                hasOrphans = true;
+            }
+        }
+    });
+
     allTasksArr.sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0));
+    return hasOrphans;
 }
 
 function getTreeDescendants(rootId) {
@@ -462,7 +478,7 @@ async function fullSyncToBackend() {
     }
 }
 
-/* ================= 超时自动巡检 & BUG 修正 ================= */
+/* ================= 超时自动巡检 ================= */
 function autoCheckDelays() {
     let changed = false;
     let today = new Date(); today.setHours(0,0,0,0);
@@ -474,7 +490,6 @@ function autoCheckDelays() {
                 if (pDate < today) {
                     t.status = '延期未完成';
                     t.history = t.history || [];
-                    // 仅当不存在该标签时才追加，防止多次刷新堆叠
                     if (!t.history.includes('🚨 系统自动标记为延期未完成')) {
                         t.history.push(`🚨 系统自动标记为延期未完成`);
                     }
@@ -483,8 +498,7 @@ function autoCheckDelays() {
             }
         }
     });
-    // 一旦巡检发生变化，即时渲染最新的统计数据面板
-    if(changed) { refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync(); }
+    if(changed) triggerSync();
 }
 
 function adaptOldData() {
@@ -501,7 +515,9 @@ function adaptOldData() {
             });
         });
     });
-    buildAllTasksArr();
+    
+    // 如果存在孤儿任务被显形，也视作数据发生了本质修改
+    let hasOrphans = buildAllTasksArr();
 
     allTasksArr.forEach(t => {
         if (!t.pid && t.parent) {
@@ -523,7 +539,7 @@ function adaptOldData() {
         }
     });
 
-    if(modified) triggerSync(); 
+    if(modified || hasOrphans) triggerSync(); 
 }
 
 /* ================= 登录与初始化 ================= */
@@ -889,7 +905,7 @@ function handleCalendarDayClick(dateStr) {
         }
         node.date = dateStr; 
 
-        // 【智能纠错】如果把原本延期的任务计划时间推到了今天或未来，且是被系统自动标红的，自动清除其记录并恢复“进行中”
+        // 【极客修复】：如果计划时间被拉到了未来或今天，立即智能消除红字，并恢复为进行中！
         let today = new Date(); today.setHours(0,0,0,0);
         let parts = dateStr.split('-');
         if(parts.length === 3) {
@@ -937,21 +953,18 @@ function initCalendar() {
 function updateNodeContent(id, val) { let node = allTasksArr.find(t => t.id === id); if (node) { node.content = val; refreshDisplayTasks(); triggerSync(); } }
 function updateNodeRemark(id, val) { let node = allTasksArr.find(t => t.id === id); if (node) { node.remark = val; refreshDisplayTasks(); triggerSync(); } }
 
-// ====== 彻底修复 BUG 1 和 BUG 2 ======
+// ====== 核心修复 BUG 1：状态变化自动抹除历史过期残留 ======
 function updateNodeStatus(id, val) {
     let node = allTasksArr.find(t => t.id === id);
     if (node) { 
         node.status = val; 
         
-        // 自动填写时间逻辑
         if(val.includes("完成") && !node.actualDate) { 
             let t=new Date(); node.actualDate=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`; 
         } 
-        else if(!val.includes("完成")) {
-            node.actualDate = ""; 
-        }
-        
-        // 【核心修复】：只要手动设定了这三种状态之一，立刻永久抹除“系统自动延期”的历史记录
+        else if(!val.includes("完成")) { node.actualDate = ""; }
+
+        // 只要不是延期未完成，全部斩草除根清除过期历史记录
         if (val === "进行中" || val === "按时完成" || val === "延期完成") {
             if (node.history) {
                 node.history = node.history.filter(h => h !== '🚨 系统自动标记为延期未完成');
@@ -961,7 +974,6 @@ function updateNodeStatus(id, val) {
         refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync(); 
     }
 }
-
 function toggleNodeCollapse(id, e) { e.stopPropagation(); let node = allTasksArr.find(t => t.id === id); if (node) { node.isCollapsed = !node.isCollapsed; refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync(); } }
 
 function addTreeRoot(type) {
@@ -1019,10 +1031,12 @@ function createStatCard(user, allTasks) {
     let t1 = uTasks.filter(t=>t.type==="一级时间节点"); let t2 = uTasks.filter(t=>t.type==="二级时间节点"); let t3 = uTasks.filter(t=>t.type==="周任务");
     
     function p(list){ 
-        if(!list || list.length===0) return "100%"; 
-        // 核心公式：绝对杜绝重复计算，只统计当前瞬时 status，且不看历史记录
-        const onTimeOrOngoing = list.filter(x => x.status === "进行中" || x.status === "按时完成").length; 
-        return Math.round((onTimeOrOngoing / list.length) * 100) + "%"; 
+        // ====== 核心修复 BUG 2：严苛过滤掉空状态，且各状态互斥只计数一次 ======
+        const validTasks = list.filter(x => x.status === "进行中" || x.status === "按时完成" || x.status === "延期完成" || x.status === "延期未完成");
+        if(!validTasks || validTasks.length===0) return "100%"; 
+        
+        const onTimeOrOngoing = validTasks.filter(x => x.status === "进行中" || x.status === "按时完成").length; 
+        return Math.round((onTimeOrOngoing / validTasks.length) * 100) + "%"; 
     }
     const d=document.createElement("div");d.className="stat-card";
     const rName = roleText[user.role] || user.role;
@@ -1099,7 +1113,7 @@ function openEditPwd() { document.getElementById("oldPwd").value=""; document.ge
 async function saveMyPwd() {
     const o=document.getElementById("oldPwd").value; const n=document.getElementById("newPwd").value; const c=document.getElementById("confirmPwd").value;
     if(!o||!n||!c) return; if(n!==c) return; if(currentUser.pwd!==btoa(o)) return;
-    await post("/user/update-pwd",{id:currentUser.id,pwd:btoa(n)}); closeModal("editPwdModal"); alert("成功，请重新登录"); logout();
+    await post("/user/update-pwd",{id:currentUser.id,pwd:btoa(n)}); closeModal("editPwdModal"); alert("成功，请重登录"); logout();
 }
 
 window.onload = async function() { await loadSystemData(); initCalendar(); refreshUI(); };
