@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>团队任务管理系统 V4.6-- 实时统计版</title>
+    <title>团队任务管理系统 V4.6* 实时统计版</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* ... 样式保持与原版完全一致（节省篇幅，实际使用时请复制原样式） ... */
+        /* 样式保持不变，由于篇幅，此处省略，实际使用请复制原样式 */
         :root {
             --status-ongoing: #e2f0d9;    
             --status-ontime: #cddef6;     
@@ -143,8 +143,6 @@
         .form-item input,.form-item select{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px; font-size:13px;}
         .login-btn{width:100%;padding:10px;background:#2b7cc7;color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer; font-weight:bold;}
         .hide{display:none!important;}
-        /* 新增 toast 样式 */
-        #saveStatus { display:inline-block; margin-left:8px; font-size:12px; color:#52c41a; }
         .toast-message { position:fixed; top:60px; right:20px; background:#333; color:#fff; padding:10px 20px; border-radius:4px; z-index:9999; font-size:14px; box-shadow:0 2px 8px rgba(0,0,0,0.2); opacity:0; transition:opacity 0.3s; }
         .toast-message.show { opacity:1; }
         .toast-message.success { background:#52c41a; }
@@ -171,7 +169,6 @@
     </div>
 </div>
 
-<!-- Toast 提示 -->
 <div id="toastMessage" class="toast-message"></div>
 
 <div class="dashboard">
@@ -417,12 +414,12 @@ function isTreeVisibleTo(rootId, viewer) {
     return false;
 }
 
-/* ================= 核心安全同步：带互斥锁的队列保存 ================= */
+/* ================= 核心安全同步：带互斥锁的队列保存，并强制保存当前操作用户 ================= */
 let syncLock = false;
 let pendingSync = false;
 
 // 实际的保存逻辑（重建全局数据并提交）
-async function fullSyncToBackend() {
+async function fullSyncToBackend(uid) {
     allTasksArr.forEach((t, i) => t.sortIndex = i);
 
     let newGlobal = {};
@@ -432,6 +429,7 @@ async function fullSyncToBackend() {
     let treeRoots = roots.filter(t => t.type !== '周任务');
     let indepWeeks = roots.filter(t => t.type === '周任务');
 
+    // 处理树状任务（已有正确的可见性）
     treeRoots.forEach(root => {
         let treeNodes = [root, ...getTreeDescendants(root.id)];
         treeNodes.sort((a,b) => (a.sortIndex||0) - (b.sortIndex||0));
@@ -445,11 +443,14 @@ async function fullSyncToBackend() {
         });
     });
 
+    // 处理独立周任务
     indepWeeks.forEach(w => {
         userList.forEach(u => {
             let isVis = false;
-            if (u.role === 'cto') { if (w.creatorId == u.id || (w.owner||'').trim() === u.name) isVis = true; } 
-            else { if (w.creatorId == u.id || (w.owner||'').trim() === u.name) isVis = true; }
+            // 原有条件：创建者或所有者
+            if (w.creatorId == u.id || (w.owner||'').trim() === u.name) isVis = true;
+            // 新增：如果是当前操作用户，强制保存（解决经理修改后丢失的问题）
+            if (uid && u.id == uid) isVis = true;
             if (isVis) newGlobal[u.id].week.push({...w});
         });
     });
@@ -470,6 +471,7 @@ async function fullSyncToBackend() {
 
 // 安全的序列化保存调度器（确保多任务排队，互不覆盖）
 async function safeSync() {
+    const uid = currentUser ? currentUser.id : null;
     if (syncLock) {
         pendingSync = true;
         while (syncLock) {
@@ -486,7 +488,7 @@ async function safeSync() {
     let success = true;
     let errorMsg = '';
     try {
-        await fullSyncToBackend();
+        await fullSyncToBackend(uid);
     } catch (e) {
         success = false;
         errorMsg = e.message || '保存失败';
@@ -498,7 +500,6 @@ async function safeSync() {
         pendingSync = false;
         await safeSync();
     }
-    // 返回结果供调用者判断
     return { success, errorMsg };
 }
 
@@ -1173,7 +1174,6 @@ async function saveMyPwd() {
     await post("/user/update-pwd",{id:currentUser.id,pwd:btoa(n)}); closeModal("editPwdModal"); alert("成功，请重登录"); logout();
 }
 
-// 导出 Excel 功能（占位，需实现）
 function exportExcel() {
     alert("导出功能可自行实现，此处略");
 }
@@ -1182,13 +1182,6 @@ window.onload = async function() {
     await loadSystemData(); 
     initCalendar(); 
     refreshUI(); 
-    // 每30秒自动检查一次保存状态（可选）
-    setInterval(() => {
-        if (currentUser) {
-            // 如果状态显示为未保存，可自动触发保存（但这里不自动保存，避免干扰用户）
-            // 只是简单更新一下状态显示（实际可忽略）
-        }
-    }, 30000);
 };
 </script>
 </body>
