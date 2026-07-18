@@ -25,7 +25,6 @@
         .btn-group { display:flex; gap:8px; align-items: center; }
         .btn-group button { padding:6px 10px; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold; background:#2b7cc7; color:white; }
 
-        /* 统计与汇总区 */
         .dashboard { background:#fff; padding:15px; border-radius:8px; margin-bottom:15px; box-shadow:0 1px 6px #00000008; }
         .dashboard h3 { color:#2b7cc7; margin-bottom:10px; font-size: 16px;}
         .group-title { font-size:14px; font-weight:bold; color:#2b7cc7; margin:10px 0 8px; }
@@ -42,7 +41,6 @@
         tr.clickable-row:hover { background: #f0f5ff; }
         td.overdue{color:#f56c6c;font-weight:bold;}
 
-        /* 核心工作区 */
         .workspace { display: grid; grid-template-columns: 80% 18%; gap: 2%; margin-bottom: 10px; }
         .window-box { background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); display: flex; flex-direction: column; height: 720px; }
         .window-title { font-size: 14px; font-weight: bold; color: #2b7cc7; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px;}
@@ -57,7 +55,6 @@
         .view-btns button { padding: 2px 6px; font-size: 11px; background: #fff; color: #2b7cc7; border: 1px solid #2b7cc7; border-radius: 3px; cursor: pointer;}
         .view-btns button.active { background: #2b7cc7; color: white; }
 
-        /* 树状图结构 */
         .tree-node { position: relative; margin-top: 6px; margin-left: 20px; }
         .view-outline .tree-node::before { content: ""; position: absolute; left: -12px; top: 12px; width: 12px; height: 1px; border-top: 1px dashed #ccc; }
         .view-outline .tree-node::after { content: ""; position: absolute; left: -12px; top: -5px; width: 1px; height: calc(100% + 12px); border-left: 1px dashed #ccc; }
@@ -76,7 +73,6 @@
         .view-radial .tree-children > .tree-node:first-child:last-child::after { display: none; }
         .view-radial .tree-node::before { border-top: none; }
 
-        /* 卡片极简设计 */
         .node-main { display: inline-flex; flex-direction: column; padding: 4px 6px; border-radius: 4px; border: 1px solid #d9d9d9; min-width: 170px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); position: relative; cursor: pointer; background: var(--status-none); vertical-align: top; z-index: 2; transition: transform 0.1s;}
         .node-main.active-focus { outline: 2px solid #1890ff; box-shadow: 0 0 6px rgba(24,144,255,0.6); }
         .node-main.readonly-card { border-style: dashed; opacity: 0.9; }
@@ -107,7 +103,6 @@
         .node-remark[contenteditable="true"]:empty::before { content: "(添加备注)"; color: #aaa; pointer-events: none; }
         .node-history { font-size: 9px; color: #c09853; margin-top: 4px; line-height: 1.3; border-top: 1px dotted #eaddc5; padding-top: 3px;}
 
-        /* 加减号 */
         .toggle-btn { position: absolute; width: 14px; height: 14px; background: #fff; border: 1px solid #aaa; border-radius: 50%; text-align: center; line-height: 12px; font-size: 11px; cursor: pointer; z-index: 10; font-weight: bold; color: #555;}
         .view-outline .toggle-btn { left: -7px; top: -7px; }
         .view-radial .toggle-btn { right: -18px; top: 50%; transform: translateY(-50%); }
@@ -116,7 +111,6 @@
         .node-main:hover .del-node-btn { display: block; }
         .del-node-btn:hover { color: #e53e3e; font-weight: bold; }
         
-        /* 人员名单区 */
         .user-list { overflow-y: auto; flex: 1; list-style: none; }
         .user-item { padding: 8px; border-bottom: 1px solid #f0f2f5; cursor: pointer; border-radius: 4px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items:center; font-size: 12px;}
         .user-item:hover { background: #e6f7ff; }
@@ -124,7 +118,6 @@
         .user-actions span { display: none; }
         .user-item:hover .user-actions span { display: inline; }
 
-        /* 时间日历窗口 */
         .time-window { background: white; border-radius: 8px; padding: 8px 12px; box-shadow: 0 -2px 10px rgba(0,0,0,0.08); margin-bottom: 10px; height: auto; min-height: 140px;}
         .calendar-wrapper { display: flex; gap: 10px; overflow-x: auto; scroll-behavior: smooth; padding-bottom: 2px; height: auto;}
         .calendar-month { border: 1px solid #e8e8e8; border-radius: 4px; min-width: 190px; flex: 0 0 auto; background: #fff; padding: 4px; }
@@ -137,7 +130,6 @@
         .calendar-day.today { background: #1890ff; color: white; font-weight: bold; }
         .calendar-day.highlight-wizard { background: #fffb8f; border: 1px solid #fadb14; font-weight: bold;}
 
-        /* 模态框 */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 3000; }
         .modal-content { background: white; padding: 20px; border-radius: 8px; width: 700px; max-width: 90%; max-height: 85vh; overflow: auto; position: relative; }
         .close-modal { position: absolute; top: 10px; right: 12px; font-size: 20px; cursor: pointer; color: #999; border:none; background:none; }
@@ -295,29 +287,6 @@ const roleText = { cto:"CTO", hw_manager:"硬件经理", sw_manager:"软件经�
 let wizardState = { activeNodeId: null, step: null }; 
 let currentViewMode = "radial"; 
 
-/* ================= 核心安全同步队列引擎 ================= */
-let syncQueueActive = false;
-let pendingSync = false;
-
-async function triggerSync() {
-    if (syncQueueActive) {
-        pendingSync = true;
-        return;
-    }
-    syncQueueActive = true;
-    try {
-        await fullSyncToBackend();
-    } catch (e) {
-        console.error("同步异常", e);
-    } finally {
-        syncQueueActive = false;
-        if (pendingSync) {
-            pendingSync = false;
-            triggerSync();
-        }
-    }
-}
-
 /* ================= 基础工具 ================= */
 async function get(url){ try{ const r=await fetch(API+url); return await r.json(); }catch(e){ return null; } }
 async function post(url,d){ try{ const r=await fetch(API+url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)}); return await r.json(); }catch(e){ return {ok:false}; } }
@@ -394,9 +363,6 @@ function buildAllTasksArr() {
     });
     allTasksArr = Array.from(map.values());
     
-    // 【核心修复】：幽灵孤儿任务强制显形机制
-    // 如果一个子任务有 pid，但是它的父节点已经被删除，它在前端会隐身（不仅入总数）。
-    // 在这里将其 pid 强行剥离置空，它将回归独立任务面板显示！
     let hasOrphans = false;
     allTasksArr.forEach(t => {
         if (t.pid) {
@@ -436,6 +402,11 @@ function isTreeVisibleTo(rootId, viewer) {
     return false;
 }
 
+/* ================= 核心安全同步：带互斥锁的队列保存 ================= */
+let syncLock = false;
+let pendingSync = false;
+
+// 实际的保存逻辑（重建全局数据并提交）
 async function fullSyncToBackend() {
     allTasksArr.forEach((t, i) => t.sortIndex = i);
 
@@ -478,8 +449,36 @@ async function fullSyncToBackend() {
     }
 }
 
+// 安全的序列化保存调度器（确保多任务排队，互不覆盖）
+async function safeSync() {
+    if (syncLock) {
+        pendingSync = true;
+        while (syncLock) {
+            await new Promise(r => setTimeout(r, 50));
+        }
+        if (pendingSync) {
+            pendingSync = false;
+            await safeSync();
+        }
+        return;
+    }
+    syncLock = true;
+    pendingSync = false;
+    try {
+        await fullSyncToBackend();
+    } catch (e) {
+        console.error("保存失败", e);
+    } finally {
+        syncLock = false;
+    }
+    if (pendingSync) {
+        pendingSync = false;
+        await safeSync();
+    }
+}
+
 /* ================= 超时自动巡检 ================= */
-function autoCheckDelays() {
+async function autoCheckDelays() {
     let changed = false;
     let today = new Date(); today.setHours(0,0,0,0);
     allTasksArr.forEach(t => {
@@ -498,10 +497,10 @@ function autoCheckDelays() {
             }
         }
     });
-    if(changed) triggerSync();
+    if(changed) await safeSync();
 }
 
-function adaptOldData() {
+async function adaptOldData() {
     let modified = false;
     userList.forEach(u => {
         let d = globalTaskData[u.id]; if (!d) return;
@@ -516,7 +515,6 @@ function adaptOldData() {
         });
     });
     
-    // 如果存在孤儿任务被显形，也视作数据发生了本质修改
     let hasOrphans = buildAllTasksArr();
 
     allTasksArr.forEach(t => {
@@ -539,7 +537,7 @@ function adaptOldData() {
         }
     });
 
-    if(modified || hasOrphans) triggerSync(); 
+    if(modified || hasOrphans) await safeSync(); 
 }
 
 /* ================= 登录与初始化 ================= */
@@ -550,8 +548,8 @@ async function loadSystemData() {
     globalTaskData = {};
     const reqs = userList.map(async (u) => { globalTaskData[u.id] = await get(`/task/${u.id}`) || {l1:[], l2:[], week:[]}; });
     await Promise.all(reqs);
-    adaptOldData();
-    autoCheckDelays();
+    await adaptOldData();
+    await autoCheckDelays();
 }
 
 function openLoginModal(){ document.getElementById("loginPwd").value=""; document.getElementById("loginModal").style.display="flex"; }
@@ -565,10 +563,7 @@ async function userLogin(){
 }
 
 async function logout(){ 
-    if(syncQueueActive || pendingSync) {
-        document.getElementById("currentUserInfo").innerText = "正在安全同步数据，请稍候...";
-        while(syncQueueActive || pendingSync) { await new Promise(r => setTimeout(r, 100)); }
-    }
+    while(syncLock) { await new Promise(r => setTimeout(r, 100)); }
     currentUser = null; viewUid = null; refreshUI(); 
 }
 
@@ -650,7 +645,7 @@ function dragOver(e, el) {
 
 function dragLeave(e, el) { $(el).removeClass('drag-over-top drag-over-bottom drag-over-center'); }
 
-function dropNode(e, targetId, el) {
+async function dropNode(e, targetId, el) {
     e.preventDefault(); e.stopPropagation(); 
     let action = 'center';
     if ($(el).hasClass('drag-over-top')) action = 'top';
@@ -696,13 +691,13 @@ function dropNode(e, targetId, el) {
         }
     }
     
-    refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync();
+    refreshDisplayTasks(); renderTaskTree(); renderDashboard(); await safeSync();
 }
 
 function dragOverPanel(e) { e.preventDefault(); $(e.currentTarget).addClass('drag-over-panel'); }
 function dragLeavePanel(e) { $(e.currentTarget).removeClass('drag-over-panel'); }
 
-function dropOnTaskTreePanel(e) {
+async function dropOnTaskTreePanel(e) {
     e.preventDefault(); $(e.currentTarget).removeClass('drag-over-panel');
     if ($(e.target).closest('.node-main').length > 0) return; 
     let draggedId = e.dataTransfer.getData("text/plain"); let dn = allTasksArr.find(t=>t.id===draggedId);
@@ -712,10 +707,10 @@ function dropOnTaskTreePanel(e) {
     dn.pid = null; 
     let dNodes = [dn, ...getTreeDescendants(dn.id)];
     allTasksArr = allTasksArr.filter(t => !dNodes.find(x => x.id === t.id)); allTasksArr.push(...dNodes); 
-    refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync();
+    refreshDisplayTasks(); renderTaskTree(); renderDashboard(); await safeSync();
 }
 
-function dropOnWeekPanel(e) {
+async function dropOnWeekPanel(e) {
     e.preventDefault(); $(e.currentTarget).removeClass('drag-over-panel');
     if ($(e.target).closest('.node-main').length > 0) return;
     let draggedId = e.dataTransfer.getData("text/plain"); let dn = allTasksArr.find(t=>t.id===draggedId);
@@ -725,7 +720,7 @@ function dropOnWeekPanel(e) {
     dn.pid = null; dn.type = '周任务';
     let dNodes = [dn, ...getTreeDescendants(dn.id)];
     allTasksArr = allTasksArr.filter(t => !dNodes.find(x => x.id === t.id)); allTasksArr.push(...dNodes); 
-    refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync();
+    refreshDisplayTasks(); renderTaskTree(); renderDashboard(); await safeSync();
 }
 
 /* ================= UI 渲染引擎 ================= */
@@ -792,13 +787,13 @@ function buildTreeNodeDOM(node) {
 /* ================= 纯粹快捷键与向导操控 ================= */
 function autoFocusInput(id) { setTimeout(() => { let i = $(`#node_wrap_${id}`).find('.node-content-input')[0]; if(i) { i.focus(); i.select(); } }, 50); }
 
-function executeDelete(id) {
+async function executeDelete(id) {
     let idsToDelete = [id];
     function collect(pid) { allTasksArr.filter(t=>t.pid===pid).forEach(c=>{ idsToDelete.push(c.id); collect(c.id); }); }
     collect(id);
     allTasksArr = allTasksArr.filter(t => !idsToDelete.includes(t.id));
     if(idsToDelete.includes(wizardState.activeNodeId)) endWizardWithoutRender();
-    refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync();
+    refreshDisplayTasks(); renderTaskTree(); renderDashboard(); await safeSync();
 }
 
 function deleteNodeSafe(id, e) {
@@ -808,7 +803,7 @@ function deleteNodeSafe(id, e) {
     setTimeout(() => { if(confirm("⚠️ 确定要彻底删除该任务及附带的子任务吗？")) executeDelete(id); }, 10);
 }
 
-$(document).on("keydown", function(e) {
+$(document).on("keydown", async function(e) {
     if (!wizardState.activeNodeId) return;
 
     let activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
@@ -836,7 +831,7 @@ $(document).on("keydown", function(e) {
             if(descendants.length > 0) { let lastD = descendants[descendants.length-1]; insertIdx = allTasksArr.indexOf(lastD); }
             allTasksArr.splice(insertIdx + 1, 0, nSib);
 
-            refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync();
+            refreshDisplayTasks(); renderTaskTree(); renderDashboard(); await safeSync();
             wizardState.activeNodeId = nId; $(".node-main").removeClass("active-focus"); $(`#node_wrap_${nId} > .node-main`).addClass("active-focus"); autoFocusInput(nId);
         } 
         else if (e.key === "Tab") {
@@ -851,7 +846,7 @@ $(document).on("keydown", function(e) {
             let insertIdx = allTasksArr.indexOf(curr);
             allTasksArr.splice(insertIdx + 1, 0, nChild);
 
-            refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync();
+            refreshDisplayTasks(); renderTaskTree(); renderDashboard(); await safeSync();
             wizardState.activeNodeId = nId; $(".node-main").removeClass("active-focus"); $(`#node_wrap_${nId} > .node-main`).addClass("active-focus"); autoFocusInput(nId);
         }
     }
@@ -890,11 +885,11 @@ window.startActualDateWizard = function(nodeId, event) {
 function handleUserSelect(userName) {
     if (wizardState.step !== 'OWNER') return;
     if (currentUser.role === 'member' && userName !== currentUser.name) { alert("⚠️ 权限限制：您只能将新建任务指派给自己。"); return; }
-    let node = allTasksArr.find(t => t.id === wizardState.activeNodeId); if (node) { node.owner = userName; renderDashboard(); triggerSync(); }
+    let node = allTasksArr.find(t => t.id === wizardState.activeNodeId); if (node) { node.owner = userName; renderDashboard(); safeSync(); }
     startPlanDateWizard(wizardState.activeNodeId, {stopPropagation:()=>{}});
 }
 
-function handleCalendarDayClick(dateStr) {
+async function handleCalendarDayClick(dateStr) {
     if (wizardState.step !== 'DATE' && wizardState.step !== 'ACTUAL_DATE') return;
     let node = allTasksArr.find(t => t.id === wizardState.activeNodeId); if (!node) return;
     
@@ -905,7 +900,6 @@ function handleCalendarDayClick(dateStr) {
         }
         node.date = dateStr; 
 
-        // 【极客修复】：如果计划时间被拉到了未来或今天，立即智能消除红字，并恢复为进行中！
         let today = new Date(); today.setHours(0,0,0,0);
         let parts = dateStr.split('-');
         if(parts.length === 3) {
@@ -919,7 +913,7 @@ function handleCalendarDayClick(dateStr) {
         node.actualDate = dateStr;
     }
     
-    endWizardWithoutRender(); refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync();
+    endWizardWithoutRender(); refreshDisplayTasks(); renderTaskTree(); renderDashboard(); await safeSync();
 }
 
 function skipWizardStep(event) {
@@ -950,11 +944,10 @@ function initCalendar() {
     }
 }
 
-function updateNodeContent(id, val) { let node = allTasksArr.find(t => t.id === id); if (node) { node.content = val; refreshDisplayTasks(); triggerSync(); } }
-function updateNodeRemark(id, val) { let node = allTasksArr.find(t => t.id === id); if (node) { node.remark = val; refreshDisplayTasks(); triggerSync(); } }
+async function updateNodeContent(id, val) { let node = allTasksArr.find(t => t.id === id); if (node) { node.content = val; refreshDisplayTasks(); await safeSync(); } }
+async function updateNodeRemark(id, val) { let node = allTasksArr.find(t => t.id === id); if (node) { node.remark = val; refreshDisplayTasks(); await safeSync(); } }
 
-// ====== 核心修复 BUG 1：状态变化自动抹除历史过期残留 ======
-function updateNodeStatus(id, val) {
+async function updateNodeStatus(id, val) {
     let node = allTasksArr.find(t => t.id === id);
     if (node) { 
         node.status = val; 
@@ -964,24 +957,23 @@ function updateNodeStatus(id, val) {
         } 
         else if(!val.includes("完成")) { node.actualDate = ""; }
 
-        // 只要不是延期未完成，全部斩草除根清除过期历史记录
         if (val === "进行中" || val === "按时完成" || val === "延期完成") {
             if (node.history) {
                 node.history = node.history.filter(h => h !== '🚨 系统自动标记为延期未完成');
             }
         }
 
-        refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync(); 
+        refreshDisplayTasks(); renderTaskTree(); renderDashboard(); await safeSync(); 
     }
 }
-function toggleNodeCollapse(id, e) { e.stopPropagation(); let node = allTasksArr.find(t => t.id === id); if (node) { node.isCollapsed = !node.isCollapsed; refreshDisplayTasks(); renderTaskTree(); renderDashboard(); triggerSync(); } }
+async function toggleNodeCollapse(id, e) { e.stopPropagation(); let node = allTasksArr.find(t => t.id === id); if (node) { node.isCollapsed = !node.isCollapsed; refreshDisplayTasks(); renderTaskTree(); renderDashboard(); await safeSync(); } }
 
-function addTreeRoot(type) {
+async function addTreeRoot(type) {
     if (type !== '周任务' && currentUser.role === 'member') { alert("⚠️ 权限限制：组员只能添加独立周任务。"); return; }
     endWizardWithoutRender();
     let defOwner = currentUser.role === 'member' ? currentUser.name : "";
     let newTask = { id: String(Date.now()), pid: null, type: type, content: "", owner: defOwner, creatorId: currentUser.id, date: "", status: "进行中", remark: "", actualDate: "", isCollapsed: false, history: [] };
-    allTasksArr.push(newTask); refreshDisplayTasks(); wizardState.activeNodeId = newTask.id; renderTaskTree(); renderDashboard(); autoFocusInput(newTask.id); triggerSync();
+    allTasksArr.push(newTask); refreshDisplayTasks(); wizardState.activeNodeId = newTask.id; renderTaskTree(); renderDashboard(); autoFocusInput(newTask.id); await safeSync();
 }
 
 /* ================= 仪表盘统计 ================= */
@@ -1031,7 +1023,6 @@ function createStatCard(user, allTasks) {
     let t1 = uTasks.filter(t=>t.type==="一级时间节点"); let t2 = uTasks.filter(t=>t.type==="二级时间节点"); let t3 = uTasks.filter(t=>t.type==="周任务");
     
     function p(list){ 
-        // ====== 核心修复 BUG 2：严苛过滤掉空状态，且各状态互斥只计数一次 ======
         const validTasks = list.filter(x => x.status === "进行中" || x.status === "按时完成" || x.status === "延期完成" || x.status === "延期未完成");
         if(!validTasks || validTasks.length===0) return "100%"; 
         
