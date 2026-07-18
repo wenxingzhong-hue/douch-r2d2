@@ -472,17 +472,21 @@ async function fullSyncToBackend(uid) {
 // 安全的序列化保存调度器（确保多任务排队，互不覆盖）
 async function safeSync() {
     const uid = currentUser ? currentUser.id : null;
+    // 如果正在同步，等待锁释放后重试
     if (syncLock) {
         pendingSync = true;
         while (syncLock) {
             await new Promise(r => setTimeout(r, 50));
         }
+        // 如果有等待，递归调用并返回结果
         if (pendingSync) {
             pendingSync = false;
             return await safeSync();
         }
-        return;
+        // 否则直接调用（防止遗漏）
+        return await safeSync();
     }
+    // 获取锁
     syncLock = true;
     pendingSync = false;
     let success = true;
@@ -496,9 +500,10 @@ async function safeSync() {
     } finally {
         syncLock = false;
     }
+    // 如果在锁期间有新的 pending，递归调用并返回其结果
     if (pendingSync) {
         pendingSync = false;
-        await safeSync();
+        return await safeSync();
     }
     return { success, errorMsg };
 }
@@ -513,14 +518,15 @@ async function manualSave() {
     statusSpan.style.color = '#faad14';
     try {
         const result = await safeSync();
-        if (result.success) {
+        if (result && result.success) {
             statusSpan.textContent = '✅ 已保存';
             statusSpan.style.color = '#52c41a';
             showToast('所有数据已成功保存', 'success');
         } else {
+            const errMsg = result ? result.errorMsg : '未知错误';
             statusSpan.textContent = '❌ 保存失败';
             statusSpan.style.color = '#f5222d';
-            showToast('保存失败：' + result.errorMsg, 'error');
+            showToast('保存失败：' + errMsg, 'error');
         }
     } catch (e) {
         statusSpan.textContent = '❌ 保存异常';
