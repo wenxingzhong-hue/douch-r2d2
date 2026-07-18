@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>团队任务管理系统 V4.6* 实时统计版</title>
+    <title>团队任务管理系统 V4.6 实时统计版**</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* 样式保持不变，由于篇幅，此处省略，实际使用请复制原样式 */
         :root {
             --status-ongoing: #e2f0d9;    
             --status-ontime: #cddef6;     
@@ -422,14 +421,14 @@ let pendingSync = false;
 async function fullSyncToBackend(uid) {
     allTasksArr.forEach((t, i) => t.sortIndex = i);
 
+    // 1. 构建新全局数据
     let newGlobal = {};
     userList.forEach(u => newGlobal[u.id] = {l1:[], l2:[], week:[]});
 
+    // 2. 处理树状任务（已有正确的可见性）
     let roots = allTasksArr.filter(t => !t.pid || !allTasksArr.find(p => p.id === t.pid));
     let treeRoots = roots.filter(t => t.type !== '周任务');
-    let indepWeeks = roots.filter(t => t.type === '周任务');
 
-    // 处理树状任务（已有正确的可见性）
     treeRoots.forEach(root => {
         let treeNodes = [root, ...getTreeDescendants(root.id)];
         treeNodes.sort((a,b) => (a.sortIndex||0) - (b.sortIndex||0));
@@ -443,50 +442,63 @@ async function fullSyncToBackend(uid) {
         });
     });
 
-    // 处理独立周任务
+    // 3. 处理独立周任务：所有 pid 为 null 且 type='周任务' 的任务
+    let indepWeeks = allTasksArr.filter(t => t.type === '周任务' && !t.pid);
     indepWeeks.forEach(w => {
         userList.forEach(u => {
             let isVis = false;
             // 原有条件：创建者或所有者
             if (w.creatorId == u.id || (w.owner||'').trim() === u.name) isVis = true;
-            // 新增：如果是当前操作用户，强制保存（解决经理修改后丢失的问题）
+            // 新增：如果是当前操作用户，强制保存
             if (uid && u.id == uid) isVis = true;
             if (isVis) newGlobal[u.id].week.push({...w});
         });
     });
 
-    // 保存每个用户的数据
+    // 4. 保存每个用户的数据，仅保存有变化的用户
+    let changedUsers = [];
     for (let u of userList) {
         let oldStr = JSON.stringify(globalTaskData[u.id] || {l1:[], l2:[], week:[]});
         let newStr = JSON.stringify(newGlobal[u.id]);
         if (oldStr !== newStr) {
-            globalTaskData[u.id] = JSON.parse(newStr);
+            changedUsers.push(u);
+        }
+    }
+
+    // 如果没有变化，直接返回成功
+    if (changedUsers.length === 0) {
+        return { success: true };
+    }
+
+    // 并发保存所有有变化的用户（但控制并发数，避免压垮服务器）
+    const batchSize = 5;
+    for (let i = 0; i < changedUsers.length; i += batchSize) {
+        const batch = changedUsers.slice(i, i + batchSize);
+        await Promise.all(batch.map(async (u) => {
+            globalTaskData[u.id] = newGlobal[u.id];
             let resp = await post("/task/save", {uid: u.id, data: globalTaskData[u.id]});
             if (!resp.ok) {
                 throw new Error(`保存用户 ${u.name} 数据失败`);
             }
-        }
+        }));
     }
+    return { success: true };
 }
 
 // 安全的序列化保存调度器（确保多任务排队，互不覆盖）
 async function safeSync() {
     const uid = currentUser ? currentUser.id : null;
-    // 如果正在同步，等待锁释放后重试
     if (syncLock) {
         pendingSync = true;
         while (syncLock) {
             await new Promise(r => setTimeout(r, 50));
         }
-        // 如果有等待，递归调用并返回结果
         if (pendingSync) {
             pendingSync = false;
             return await safeSync();
         }
-        // 否则直接调用（防止遗漏）
         return await safeSync();
     }
-    // 获取锁
     syncLock = true;
     pendingSync = false;
     let success = true;
@@ -500,7 +512,6 @@ async function safeSync() {
     } finally {
         syncLock = false;
     }
-    // 如果在锁期间有新的 pending，递归调用并返回其结果
     if (pendingSync) {
         pendingSync = false;
         return await safeSync();
